@@ -401,33 +401,143 @@ class AiPage extends StatefulWidget {
 
 class _AiPageState extends State<AiPage> {
   final product = TextEditingController();
+  final targetCpa = TextEditingController(text: '120');
   String tone = 'Professional';
+  String objective = 'Sales';
+  double dailyCap = 500;
+  double maxChange = 15;
+  bool autoOptimize = true;
+  bool pauseOnHighCpa = true;
+  bool approvalForNewCampaigns = true;
   String? output;
+  bool policySaved = false;
+
   @override
-  void dispose() { product.dispose(); super.dispose(); }
+  void dispose() {
+    product.dispose();
+    targetCpa.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => PageBody(children: [
-    Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)])), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
-      SizedBox(height: 10),
-      Text('Creative intelligence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-      SizedBox(height: 5),
-      Text('สร้างแนวคิดข้อความโฆษณาเบื้องต้นได้ในแอป', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
+    Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(colors: [Color(0xFF38295F), Color(0xFF171725)]),
+        border: Border.all(color: violet.withOpacity(.28)),
+      ),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF)), SizedBox(width: 8), Text('AI COMMANDER', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 1.1))]),
+        SizedBox(height: 8),
+        Text('วางแผน สร้าง วิเคราะห์ และปรับปรุงโฆษณาในพื้นที่ควบคุมเดียว', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11, height: 1.5)),
+        SizedBox(height: 10),
+        Text('AUTOMATION POLICY • ตั้งกติกาก่อนให้ AI ทำงาน', style: TextStyle(color: Color(0xFFBDAAFF), fontSize: 9, letterSpacing: .8)),
+      ]),
+    ),
+    const SectionTitle('1. Automation controls'),
+    CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        value: autoOptimize,
+        activeColor: violet,
+        title: const Text('อนุญาตให้ AI ปรับแคมเปญอัตโนมัติ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+        subtitle: const Text('ปรับการกระจายงบและหยุดชุดโฆษณาตามกติกาที่ตั้งไว้', style: TextStyle(color: muted, fontSize: 10)),
+        onChanged: (v) => setState(() { autoOptimize = v; policySaved = false; }),
+      ),
+      const Divider(color: Color(0xFF303241)),
+      Text('เพดานงบโฆษณาต่อวัน  ฿${dailyCap.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      Slider(
+        value: dailyCap, min: 100, max: 10000, divisions: 99, activeColor: violet,
+        label: '฿${dailyCap.toStringAsFixed(0)}',
+        onChanged: (v) => setState(() { dailyCap = v; policySaved = false; }),
+      ),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [Text('฿100', style: TextStyle(color: muted, fontSize: 10)), Text('฿10,000', style: TextStyle(color: muted, fontSize: 10))]),
+      const SizedBox(height: 12),
+      Text('ปรับงบได้สูงสุดต่อครั้ง ${maxChange.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      Slider(
+        value: maxChange, min: 5, max: 30, divisions: 5, activeColor: violet,
+        label: '${maxChange.toStringAsFixed(0)}%',
+        onChanged: (v) => setState(() { maxChange = v; policySaved = false; }),
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        value: pauseOnHighCpa,
+        activeColor: violet,
+        title: const Text('หยุด/แจ้งเตือนเมื่อ CPA เกินเป้าหมาย', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        onChanged: (v) => setState(() { pauseOnHighCpa = v; policySaved = false; }),
+      ),
+      if (pauseOnHighCpa) ...[
+        const Text('CPA เป้าหมาย (บาท)', style: TextStyle(color: muted, fontSize: 11)),
+        const SizedBox(height: 6),
+        TextField(controller: targetCpa, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '120')),
+      ],
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        value: approvalForNewCampaigns,
+        activeColor: violet,
+        title: const Text('ต้องอนุมัติก่อนสร้าง/เผยแพร่แคมเปญใหม่', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        subtitle: const Text('แคมเปญเดิมยังปรับอัตโนมัติได้ภายในเพดานที่กำหนด', style: TextStyle(color: muted, fontSize: 10)),
+        onChanged: (v) => setState(() { approvalForNewCampaigns = v; policySaved = false; }),
+      ),
+      const SizedBox(height: 8),
+      SizedBox(width: double.infinity, child: FilledButton.icon(
+        onPressed: () {
+          final cpa = double.tryParse(targetCpa.text);
+          if (pauseOnHighCpa && (cpa == null || cpa <= 0)) {
+            notice(context, 'กรุณากำหนด CPA เป้าหมายให้ถูกต้อง');
+            return;
+          }
+          setState(() => policySaved = true);
+          notice(context, 'บันทึกกติกา AI ในหน้าจอตัวอย่างแล้ว');
+        },
+        icon: const Icon(Icons.shield_outlined), label: const Text('Save automation rules'),
+        style: FilledButton.styleFrom(backgroundColor: violet),
+      )),
+      if (policySaved) ...[
+        const SizedBox(height: 10),
+        Text('บันทึกกติกาแล้ว • งบสูงสุด ฿${dailyCap.toStringAsFixed(0)}/วัน • ปรับต่อครั้งไม่เกิน ${maxChange.toStringAsFixed(0)}%', style: const TextStyle(color: Color(0xFF8DD9B0), fontSize: 11)),
+      ],
     ])),
-    const SectionTitle('What are you promoting?'),
-    TextField(controller: product, maxLines: 3, decoration: const InputDecoration(hintText: 'อธิบายสินค้า บริการ หรือข้อเสนอของคุณ')),
-    const SectionTitle('Writing tone'),
-    DropdownButtonFormField<String>(value: tone, items: ['Professional', 'Friendly', 'Luxury', 'Urgent'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => tone = v!)),
-    const SizedBox(height: 14),
+    const SectionTitle('2. AI campaign planner'),
+    const Text('บอก AI ว่าคุณขายอะไร แล้วเตรียมแผนแคมเปญให้ตรวจสอบ', style: TextStyle(color: muted, fontSize: 11)),
+    const SizedBox(height: 8),
+    TextField(controller: product, maxLines: 3, decoration: const InputDecoration(hintText: 'เช่น ขายเสื้อผ้าผู้หญิง ราคา 299 บาท ต้องการลูกค้าใหม่')),
+    const SizedBox(height: 12),
+    DropdownButtonFormField<String>(
+      value: objective,
+      items: ['Awareness', 'Traffic', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: (v) => setState(() => objective = v ?? objective),
+      decoration: const InputDecoration(labelText: 'Campaign objective'),
+    ),
+    const SizedBox(height: 12),
+    DropdownButtonFormField<String>(
+      value: tone,
+      items: ['Professional', 'Friendly', 'Luxury', 'Urgent'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: (v) => setState(() => tone = v ?? tone),
+      decoration: const InputDecoration(labelText: 'Creative tone'),
+    ),
+    const SizedBox(height: 12),
     SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () {
-      if (product.text.trim().isEmpty) { notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน'); return; }
-      setState(() => output = 'พบกับ ${product.text.trim()} ที่ตอบโจทย์คุณในทุกวัน เลือกสิ่งที่ใช่ พร้อมเริ่มต้นได้แล้ววันนี้! [โทน: $tone]');
-    }, icon: const Icon(Icons.auto_awesome), label: const Text('Generate demo copy'), style: FilledButton.styleFrom(backgroundColor: violet))),
+      if (product.text.trim().isEmpty) {
+        notice(context, 'กรุณาระบุสินค้า/บริการก่อน');
+        return;
+      }
+      setState(() => output = 'แผนตัวอย่างสำหรับ: ${product.text.trim()}\\nเป้าหมาย: $objective\\nงบสูงสุด: ฿${dailyCap.toStringAsFixed(0)}/วัน\\nแนวทาง: ทดสอบกลุ่มเป้าหมายและครีเอทีฟหลายแบบ แล้วเพิ่มงบเฉพาะชุดที่ผ่านเกณฑ์\\nข้อความโฆษณา: พบกับ ${product.text.trim()} เลือกสิ่งที่ใช่ พร้อมเริ่มต้นได้แล้ววันนี้!\\nโทน: $tone');
+    }, icon: const Icon(Icons.auto_awesome), label: const Text('Prepare campaign plan'), style: FilledButton.styleFrom(backgroundColor: violet))),
     if (output != null) ...[
-      const SectionTitle('Generated concept'),
-      CardPanel(child: SelectableText(output!, style: const TextStyle(fontSize: 13, height: 1.6))),
+      const SectionTitle('Campaign plan preview'),
+      CardPanel(child: SelectableText(output!, style: const TextStyle(fontSize: 12, height: 1.7))),
     ],
-    const Text('หมายเหตุ: เป็นตัวอย่างสร้างข้อความแบบออฟไลน์ ยังไม่ได้เชื่อม AI API', style: TextStyle(color: muted, fontSize: 10)),
+    const SectionTitle('3. Safety and execution status'),
+    const CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [Icon(Icons.lock_outline, color: Color(0xFFBDAAFF), size: 18), SizedBox(width: 8), Expanded(child: Text('Customer-owned ad accounts', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)))]),
+      SizedBox(height: 7),
+      Text('งบโฆษณาจะถูกเรียกเก็บโดย Meta, TikTok หรือ Google จากบัญชีของลูกค้าโดยตรง ADNEXA ไม่ถือเงินค่าโฆษณา', style: TextStyle(color: muted, fontSize: 11, height: 1.5)),
+      SizedBox(height: 10),
+      Text('โหมดปัจจุบัน: DEMO • ยังไม่มี OAuth, AI API หรือการแก้ไขแคมเปญจริง การตั้งค่าด้านบนยังไม่ส่งผลต่อบัญชีโฆษณา', style: TextStyle(color: Color(0xFFFFD28A), fontSize: 10, height: 1.5)),
+    ])),
   ]);
 }
 
