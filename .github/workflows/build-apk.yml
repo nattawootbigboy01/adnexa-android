@@ -3,6 +3,8 @@ name: Build ADNEXA APK
 on:
   workflow_dispatch:
   push:
+    branches: [ "main", "feature/firebase-email-auth" ]
+  pull_request:
     branches: [ "main" ]
 
 permissions:
