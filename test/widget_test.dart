@@ -54,4 +54,22 @@ void main() {
     expect(find.textContaining('ยังไม่มีการตัดเงินจริง'), findsOneWidget);
   });
 
+  testWidgets('shows AI Commander automation guardrails', (tester) async {
+    tester.view.physicalSize = const Size(1080, 1920);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const AdnexaApp());
+    await tester.tap(find.text('AI'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('AI COMMANDER'), findsOneWidget);
+    expect(find.text('อนุญาตให้ AI ปรับแคมเปญอัตโนมัติ'), findsOneWidget);
+    expect(find.textContaining('เพดานงบโฆษณาต่อวัน'), findsOneWidget);
+    expect(find.text('หยุด/แจ้งเตือนเมื่อ CPA เกินเป้าหมาย'), findsOneWidget);
+    expect(find.text('ต้องอนุมัติก่อนสร้าง/เผยแพร่แคมเปญใหม่'), findsOneWidget);
+    expect(find.textContaining('ยังไม่มี OAuth, AI API'), findsOneWidget);
+  });
+
 }
