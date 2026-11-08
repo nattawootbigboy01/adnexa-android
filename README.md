@@ -8,10 +8,11 @@ Premium dark advertising-management mobile prototype built with Flutter.
 - Account Center placeholders for Meta, TikTok and Google
 - Offline sample ad-copy generator
 - Analytics demo screen
+- Billing prototype with bank transfer, PromptPay, card, and monthly auto-renewal preferences
 - GitHub Actions workflow to build a release APK
 
 ## Important limitations
-This is a UI prototype. Metrics are sample data. No real ads are created, published, or billed. Platform connection buttons are placeholders. Real OAuth, server-side token storage, platform API approvals, backend authentication, billing, and live analytics are not implemented.
+This is a UI prototype. Metrics are sample data. No real ads are created, published, or billed. Platform connection buttons are placeholders. Real OAuth, server-side token storage, platform API approvals, backend authentication, payment gateway integration, recurring card billing, QR generation, bank-transfer verification, and live analytics are not implemented. Billing options are UI-only and do not collect or charge money.
 
 ADNEXA will never ask users to enter their Meta, TikTok, or Google account passwords into the app. Production integrations must use each platform's official OAuth flow and approved APIs.
 
