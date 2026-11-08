@@ -163,11 +163,16 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
         );
         String? verificationError;
         try {
+          await FirebaseAuth.instance.setLanguageCode('th');
           await credential.user?.sendEmailVerification();
         } on FirebaseAuthException catch (error) {
           verificationError = error.code;
+        } catch (error) {
+          verificationError = 'ส่งคำขอไม่สำเร็จ: ${error.runtimeType}';
+        } finally {
+          // A newly-created account must not remain signed in before email verification.
+          await FirebaseAuth.instance.signOut();
         }
-        await FirebaseAuth.instance.signOut();
         if (mounted) {
           setState(() {
             _register = false;
@@ -375,16 +380,23 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
   Future<void> _resend() async {
     setState(() => _busy = true);
     try {
+      await FirebaseAuth.instance.setLanguageCode('th');
       await FirebaseAuth.instance.currentUser?.sendEmailVerification();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('ส่งอีเมลยืนยันอีกครั้งแล้ว'),
         ));
       }
-    } catch (_) {
+    } on FirebaseAuthException catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('ส่งอีเมลไม่สำเร็จ (${error.code})'),
+        ));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('ส่งอีเมลไม่สำเร็จ (${error.runtimeType})'),
         ));
       }
     } finally {
