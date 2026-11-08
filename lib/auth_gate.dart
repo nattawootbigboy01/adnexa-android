@@ -117,6 +117,7 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
   bool _busy = false;
   bool _obscure = true;
   String? _error;
+  String? _status;
 
   @override
   void dispose() {
@@ -160,7 +161,22 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
           email: email,
           password: _password.text,
         );
-        await credential.user?.sendEmailVerification();
+        String? verificationError;
+        try {
+          await credential.user?.sendEmailVerification();
+        } on FirebaseAuthException catch (error) {
+          verificationError = error.code;
+        }
+        await FirebaseAuth.instance.signOut();
+        if (mounted) {
+          setState(() {
+            _register = false;
+            _status = verificationError == null
+                ? 'ลงทะเบียนสำเร็จแล้ว กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี จากนั้นเข้าสู่ระบบ'
+                : 'ลงทะเบียนสำเร็จแล้ว แต่ส่งอีเมลยืนยันไม่สำเร็จ ($verificationError) กรุณากดลืม/ส่งยืนยันใหม่หรือติดต่อผู้ดูแล';
+            _error = null;
+          });
+        }
       } else {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
@@ -168,9 +184,15 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
         );
       }
     } on FirebaseAuthException catch (error) {
-      if (mounted) setState(() => _error = _friendlyError(error));
+      if (mounted) setState(() {
+        _error = _friendlyError(error);
+        _status = null;
+      });
     } catch (_) {
-      if (mounted) setState(() => _error = 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      if (mounted) setState(() {
+        _error = 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        _status = null;
+      });
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -292,6 +314,13 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
                       )
                     else
                       const SizedBox(height: 12),
+                    if (_status != null) ...[
+                      Text(_status!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Color(0xFF8ED6AE), fontSize: 13, height: 1.5)),
+                      const SizedBox(height: 12),
+                    ],
                     if (_error != null) ...[
                       Text(_error!,
                           style: const TextStyle(
@@ -318,6 +347,7 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
                           : () => setState(() {
                                 _register = !_register;
                                 _error = null;
+                                _status = null;
                               }),
                       child: Text(_register
                           ? 'มีบัญชีอยู่แล้ว? เข้าสู่ระบบ'
