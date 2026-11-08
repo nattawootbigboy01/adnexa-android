@@ -55,7 +55,7 @@ class _AuthGateState extends State<AuthGate> {
           if (snapshot.data == null) return const _SetupRequired();
 
           return StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
+            stream: FirebaseAuth.instance.userChanges(),
             builder: (context, authSnapshot) {
               if (authSnapshot.connectionState == ConnectionState.waiting) {
                 return const _AuthScaffold(
