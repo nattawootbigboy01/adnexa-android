@@ -1,6 +1,8 @@
 name: Build ADNEXA APK
 
 on:
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
   push:
     branches: [ "main" ]
@@ -28,6 +30,8 @@ jobs:
         run: flutter create . --platforms=android --project-name adnexa
       - name: Install dependencies
         run: flutter pub get
+      - name: Run widget tests
+        run: flutter test
       - name: Analyze
         run: flutter analyze
       - name: Build release APK
