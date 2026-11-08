@@ -187,11 +187,11 @@ class DashboardPage extends StatelessWidget {
     const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'Not connected'),
     const PlatformTile(name: 'Google Ads', subtitle: 'Search, Display & YouTube', icon: Icons.ads_click, status: 'Not connected'),
     const SectionTitle('Quick tools'),
-    const Wrap(spacing: 8, runSpacing: 8, children: [
-      QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
-      QuickChip(icon: Icons.groups_outlined, label: 'Audience'),
-      QuickChip(icon: Icons.insights, label: 'Reports'),
-      QuickChip(icon: Icons.receipt_long, label: 'Billing'),
+    Wrap(spacing: 8, runSpacing: 8, children: [
+      const QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
+      const QuickChip(icon: Icons.groups_outlined, label: 'Audience'),
+      const QuickChip(icon: Icons.insights, label: 'Reports'),
+      QuickChip(icon: Icons.receipt_long, label: 'Billing', onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BillingPage()))),
     ]),
   ]);
 }
@@ -199,13 +199,94 @@ class DashboardPage extends StatelessWidget {
 class QuickChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  const QuickChip({super.key, required this.icon, required this.label});
+  final VoidCallback? onTap;
+  const QuickChip({super.key, required this.icon, required this.label, this.onTap});
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(.06))),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: violet), const SizedBox(width: 7), Text(label, style: const TextStyle(fontSize: 11))]),
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(12),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(.06))),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: violet), const SizedBox(width: 7), Text(label, style: const TextStyle(fontSize: 11))]),
+    ),
   );
+}
+
+
+class BillingPage extends StatefulWidget {
+  const BillingPage({super.key});
+  @override
+  State<BillingPage> createState() => _BillingPageState();
+}
+
+class _BillingPageState extends State<BillingPage> {
+  String method = 'card';
+  bool autoRenew = true;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Billing & Subscription')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)]),
+            border: Border.all(color: violet.withOpacity(.25)),
+          ),
+          child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('MEMBERSHIP', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 10, letterSpacing: 1.4)),
+            SizedBox(height: 8),
+            Text('ยังไม่ได้สมัครแพ็กเกจ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            SizedBox(height: 6),
+            Text('เลือกรูปแบบชำระเงินเพื่อเตรียมเปิดใช้งานสมาชิก ADNEXA', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
+          ]),
+        ),
+        const SectionTitle('Payment method'),
+        _PaymentChoice(value: 'transfer', groupValue: method, title: 'โอนเงินผ่านธนาคาร', subtitle: 'แนบหลักฐานและรอตรวจสอบยอดชำระ', icon: Icons.account_balance_outlined, onChanged: (v) => setState(() => method = v)),
+        _PaymentChoice(value: 'promptpay', groupValue: method, title: 'สแกนจ่าย PromptPay', subtitle: 'สร้าง QR ตามยอดที่ต้องชำระ', icon: Icons.qr_code_2_rounded, onChanged: (v) => setState(() => method = v)),
+        _PaymentChoice(value: 'card', groupValue: method, title: 'บัตรเครดิต / เดบิต', subtitle: 'รองรับการบันทึกบัตรผ่านผู้ให้บริการชำระเงิน', icon: Icons.credit_card_rounded, onChanged: (v) => setState(() => method = v)),
+        const SectionTitle('Automatic renewal'),
+        CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: autoRenew,
+            activeColor: violet,
+            title: const Text('ต่ออายุสมาชิกอัตโนมัติ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            subtitle: const Text('เรียกเก็บทุกเดือนจนกว่าลูกค้าจะยกเลิก', style: TextStyle(color: muted, fontSize: 11)),
+            onChanged: (v) => setState(() => autoRenew = v),
+          ),
+          const Divider(color: Color(0xFF303241)),
+          const Text('ลูกค้าสามารถยกเลิกได้ทุกเมื่อ ระบบจะหยุดเรียกเก็บรอบถัดไป และคงสิทธิ์จนสิ้นสุดรอบที่ชำระแล้ว', style: TextStyle(color: muted, fontSize: 11, height: 1.5)),
+        ])),
+        const SectionTitle('Important'),
+        const DemoNotice(),
+        const SizedBox(height: 12),
+        const Text('หน้าจอนี้เป็นต้นแบบเท่านั้น ยังไม่มีการตัดเงินจริง การสร้าง QR การบันทึกบัตร หรือการต่ออายุอัตโนมัติ จนกว่าจะเชื่อม Backend และผู้ให้บริการชำระเงินที่รองรับ', style: TextStyle(color: muted, fontSize: 11, height: 1.5)),
+      ],
+    ),
+  );
+}
+
+class _PaymentChoice extends StatelessWidget {
+  final String value, groupValue, title, subtitle;
+  final IconData icon;
+  final ValueChanged<String> onChanged;
+  const _PaymentChoice({required this.value, required this.groupValue, required this.title, required this.subtitle, required this.icon, required this.onChanged});
+  @override
+  Widget build(BuildContext context) => CardPanel(child: RadioListTile<String>(
+    value: value,
+    groupValue: groupValue,
+    onChanged: (v) { if (v != null) onChanged(v); },
+    activeColor: violet,
+    contentPadding: EdgeInsets.zero,
+    title: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+    subtitle: Text(subtitle, style: const TextStyle(color: muted, fontSize: 10)),
+    secondary: Icon(icon, color: const Color(0xFFC4B3FF)),
+  ));
 }
 
 class PlatformTile extends StatelessWidget {
