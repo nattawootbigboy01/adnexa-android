@@ -244,13 +244,51 @@ class _CampaignPageState extends State<CampaignPage> {
   String campaignMode = 'AI';
   String manualAge = '25–44 ปี';
   String manualGender = 'ทุกเพศ';
+  int durationDays = 7;
   final productInfo = TextEditingController();
-  final serviceArea = TextEditingController();
   final manualAudience = TextEditingController();
   final manualInterests = TextEditingController();
   String? aiPlan;
   final drafts = <String>[];
   bool draftsLoading = true;
+
+  static const Map<String, String> objectiveLabels = {
+    'Reach': 'เพิ่มการเข้าถึง',
+    'Awareness': 'สร้างการรับรู้แบรนด์',
+    'Traffic': 'เพิ่มจำนวนผู้เข้าชม',
+    'Engagement': 'เพิ่มการมีส่วนร่วม',
+    'Leads': 'หาลูกค้าเป้าหมาย',
+    'Sales': 'เพิ่มยอดขาย',
+  };
+
+  static const Map<String, String> objectiveDescriptions = {
+    'Reach': 'เน้นให้โฆษณาเข้าถึงผู้คนให้ได้มากที่สุด',
+    'Awareness': 'ทำให้ผู้คนรู้จักแบรนด์ สินค้า หรือบริการ',
+    'Traffic': 'พาคนไปยังเว็บไซต์ เพจ หรือปลายทางที่กำหนด',
+    'Engagement': 'กระตุ้นการกดถูกใจ แสดงความคิดเห็น แชร์ หรือมีปฏิสัมพันธ์',
+    'Leads': 'หาผู้สนใจและกระตุ้นให้ติดต่อหรือส่งข้อมูล',
+    'Sales': 'มุ่งกระตุ้นการสั่งซื้อหรือยอดขาย',
+  };
+
+  String get objectiveDescription =>
+      objectiveDescriptions[objective] ?? 'เลือกวัตถุประสงค์ให้ตรงกับผลลัพธ์ที่ต้องการ';
+
+  String _formatPeople(int value) => value.toString().replaceAllMapped(
+        RegExp(r'\B(?=(\d{3})+(?!\d))'),
+        (match) => ',',
+      );
+
+  String get reachEstimate {
+    final dailyAmount = double.tryParse(budget.text.trim());
+    if (dailyAmount == null || dailyAmount <= 0) {
+      return 'กรุณากรอกงบประมาณต่อวันเพื่อดูประมาณการ';
+    }
+    final totalBudget = dailyAmount * durationDays;
+    // Planning-only assumptions: CPM ฿30–฿100 and frequency 1.2–2.0.
+    final low = (totalBudget / 100 * 1000 / 2).round();
+    final high = (totalBudget / 30 * 1000 / 1.2).round();
+    return _formatPeople(low) + '–' + _formatPeople(high) + ' คน';
+  }
 
   @override
   void initState() {
@@ -294,12 +332,11 @@ class _CampaignPageState extends State<CampaignPage> {
       audience = 'ผู้ที่สนใจสินค้า/บริการประเภทนี้และลูกค้าในพื้นที่ให้บริการ';
       creative = 'ภาพหรือวิดีโอแสดงประโยชน์ จุดเด่น ราคา และหลักฐานความน่าเชื่อถือ';
     }
-    final area = serviceArea.text.trim().isEmpty ? 'กำหนดพื้นที่ให้บริการก่อนเผยแพร่' : serviceArea.text.trim();
-    setState(() { aiPlan = 'กลุ่มเป้าหมายแนะนำ: ' + audience + '\nพื้นที่: ' + area + '\nช่วงอายุเริ่มทดสอบ: 25–44 ปี (ปรับตามข้อมูลจริง)\nชิ้นงานแนะนำ: ' + creative + '\nเป้าหมาย: ' + objective + '\n\nคำแนะนำนี้มาจากตัวช่วยภายในแอป ยังไม่ใช่ AI ออนไลน์ ต้องตรวจทานก่อนใช้'; });
+    setState(() { aiPlan = 'กลุ่มเป้าหมายแนะนำ: ' + audience + '\nพื้นที่เป้าหมาย: ประเทศไทยทั้งประเทศ\nช่วงอายุเริ่มทดสอบ: 25–44 ปี (ปรับตามข้อมูลจริง)\nชิ้นงานแนะนำ: ' + creative + '\nเป้าหมาย: ' + (objectiveLabels[objective] ?? objective) + '\n\nคำแนะนำนี้มาจากตัวช่วยภายในแอป ยังไม่ใช่ AI ออนไลน์ ต้องตรวจทานก่อนใช้'; });
   }
 
   @override
-  void dispose() { name.dispose(); budget.dispose(); productInfo.dispose(); serviceArea.dispose(); manualAudience.dispose(); manualInterests.dispose(); super.dispose(); }
+  void dispose() { name.dispose(); budget.dispose(); productInfo.dispose(); manualAudience.dispose(); manualInterests.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) => PageBody(children: [
@@ -311,7 +348,7 @@ class _CampaignPageState extends State<CampaignPage> {
       Expanded(child: _ModeCard(selected: campaignMode == 'Manual', icon: Icons.tune_rounded, title: 'ทำเองทั้งหมด', subtitle: 'กำหนดเองทุกอย่าง', onTap: () => setState(() { campaignMode = 'Manual'; aiPlan = null; }))),
     ]),
     const SizedBox(height: 10),
-    CardPanel(child: Text(campaignMode == 'AI' ? 'โหมด AI: ระบุสินค้าและพื้นที่ แล้วให้ตัวช่วยเสนอแนวทาง คุณตรวจแก้ก่อนบันทึกได้' : 'โหมดทำเอง: คุณกำหนดพื้นที่ กลุ่มลูกค้า อายุ เพศ และความสนใจด้วยตนเอง', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
+    CardPanel(child: Text(campaignMode == 'AI' ? 'โหมด AI: ระบุสินค้า/บริการ แล้วให้ตัวช่วยเสนอแนวทาง โดยกำหนดพื้นที่โฆษณาเป็นประเทศไทยทั้งประเทศ' : 'โหมดทำเอง: คุณกำหนดกลุ่มลูกค้า อายุ เพศ และความสนใจได้เอง โดยพื้นที่โฆษณาล็อกไว้ในประเทศไทยทั้งประเทศ', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -319,23 +356,26 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    TextField(controller: name, decoration: const InputDecoration(hintText: 'e.g. November product launch')),
+    TextField(controller: name, decoration: const InputDecoration(hintText: 'ใส่ชื่อสินค้าที่ต้องการโฆษณา')),
     const SizedBox(height: 15),
-    const Text('Objective', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('วัตถุประสงค์การโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: objective, items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => objective = v!)),
+    DropdownButtonFormField<String>(
+      value: objective,
+      items: objectiveLabels.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+      onChanged: (v) => setState(() => objective = v ?? objective),
+    ),
+    Padding(padding: const EdgeInsets.only(top: 7), child: Text(objectiveDescription, style: const TextStyle(color: muted, fontSize: 11, height: 1.4))),
     const SizedBox(height: 15),
     if (campaignMode == 'AI') ...[
       const SectionTitle('สินค้า/บริการที่ต้องการโปรโมต'),
       TextField(controller: productInfo, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น ร้านกาแฟเดลิเวอรี ราคาเริ่มต้น 45 บาท')),
-      const SectionTitle('พื้นที่ให้บริการ (ถ้ามี)'),
-      TextField(controller: serviceArea, decoration: const InputDecoration(hintText: 'เช่น อำเภอเมืองขอนแก่น')),
+      CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (กำหนดให้อัตโนมัติ)', style: TextStyle(fontSize: 11, color: muted)))])),
       const SizedBox(height: 10),
       SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _makeAiPlan, icon: const Icon(Icons.auto_awesome), label: const Text('ให้ AI ช่วยวิเคราะห์และเสนอแผน'))),
       if (aiPlan != null) CardPanel(child: SelectableText(aiPlan!, style: const TextStyle(fontSize: 12, height: 1.6))),
     ] else ...[
-      const SectionTitle('พื้นที่เป้าหมาย'),
-      TextField(controller: serviceArea, decoration: const InputDecoration(hintText: 'เช่น อำเภอเมืองขอนแก่น หรือทั่วประเทศ')),
+      CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (ไม่ต้องเลือกจังหวัด)', style: TextStyle(fontSize: 11, color: muted)))])),
       const SectionTitle('กลุ่มลูกค้า'),
       TextField(controller: manualAudience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น เจ้าของธุรกิจ / คนทำงาน')),
       const SectionTitle('ช่วงอายุ'),
@@ -345,9 +385,27 @@ class _CampaignPageState extends State<CampaignPage> {
       const SectionTitle('ความสนใจ (ถ้ามี)'),
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
     ],
-    const Text('Daily budget (THB)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('งบประมาณต่อวัน (บาท)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
+    TextField(controller: budget, keyboardType: TextInputType.number, onChanged: (_) => setState(() {}), decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
+    const SizedBox(height: 12),
+    const Text('ระยะเวลาโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const SizedBox(height: 7),
+    DropdownButtonFormField<int>(
+      value: durationDays,
+      items: const [1, 3, 7, 14, 30].map((days) => DropdownMenuItem(value: days, child: Text('$days วัน'))).toList(),
+      onChanged: (value) => setState(() => durationDays = value ?? durationDays),
+    ),
+    const SizedBox(height: 12),
+    CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('ประมาณการจำนวนคนที่อาจเข้าถึงได้', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 7),
+      Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+      const SizedBox(height: 5),
+      Text('งบรวม: ฿\${((double.tryParse(budget.text.trim()) ?? 0) * durationDays).toStringAsFixed(0)} ตลอด $durationDays วัน', style: const TextStyle(fontSize: 11, color: muted)),
+      const SizedBox(height: 6),
+      const Text('ตัวเลขจำลองจากสมมติฐาน CPM ฿30–฿100 และความถี่ 1.2–2 ครั้งต่อคน ยังไม่ใช่ข้อมูลประมาณการจากแพลตฟอร์มโฆษณาจริง ไม่รับประกันผลลัพธ์ และจะต้องเชื่อมต่อ API ของแพลตฟอร์มก่อนจึงจะแสดงค่าจริงได้', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
+    ])),
     const SizedBox(height: 18),
     SizedBox(width: double.infinity, child: FilledButton.icon(
       onPressed: () {
@@ -358,8 +416,8 @@ class _CampaignPageState extends State<CampaignPage> {
         }
         if (campaignMode == 'AI' && aiPlan == null) { notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนบันทึก'); return; }
         if (campaignMode == 'Manual' && manualAudience.text.trim().isEmpty) { notice(context, 'กรุณาระบุกลุ่มลูกค้าในโหมดทำเอง'); return; }
-        final targeting = campaignMode == 'AI' ? 'AI PLAN: ' + (aiPlan ?? '') : 'MANUAL: พื้นที่ ' + serviceArea.text.trim() + ', กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + manualAge + ', เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
-        setState(() => drafts.insert(0, '${name.text.trim()} • $platform • $objective • ฿${amount.toStringAsFixed(0)}/day • MODE: $campaignMode • $targeting'));
+        final targeting = campaignMode == 'AI' ? 'AI PLAN: ' + (aiPlan ?? '') : 'MANUAL: พื้นที่ประเทศไทย, กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + manualAge + ', เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
+        setState(() => drafts.insert(0, '${name.text.trim()} • $platform • ${objectiveLabels[objective] ?? objective} • ฿${amount.toStringAsFixed(0)}/day • $durationDays วัน • พื้นที่ประเทศไทย • MODE: $campaignMode • $targeting'));
         _saveDrafts();
         name.clear();
         notice(context, 'บันทึก Draft ลงในเครื่องแล้ว (ยังไม่ส่งโฆษณาจริง)');
