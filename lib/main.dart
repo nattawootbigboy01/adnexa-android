@@ -402,7 +402,7 @@ class _CampaignPageState extends State<CampaignPage> {
       const SizedBox(height: 7),
       Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
       const SizedBox(height: 5),
-      Text('งบรวม: ฿\${((double.tryParse(budget.text.trim()) ?? 0) * durationDays).toStringAsFixed(0)} ตลอด $durationDays วัน', style: const TextStyle(fontSize: 11, color: muted)),
+      Text('งบรวม: ฿${((double.tryParse(budget.text.trim()) ?? 0) * durationDays).toStringAsFixed(0)} ตลอด $durationDays วัน', style: const TextStyle(fontSize: 11, color: muted)),
       const SizedBox(height: 6),
       const Text('ตัวเลขจำลองจากสมมติฐาน CPM ฿30–฿100 และความถี่ 1.2–2 ครั้งต่อคน ยังไม่ใช่ข้อมูลประมาณการจากแพลตฟอร์มโฆษณาจริง ไม่รับประกันผลลัพธ์ และจะต้องเชื่อมต่อ API ของแพลตฟอร์มก่อนจึงจะแสดงค่าจริงได้', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
     ])),
