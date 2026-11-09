@@ -273,10 +273,7 @@ class _CampaignPageState extends State<CampaignPage> {
   String get objectiveDescription =>
       objectiveDescriptions[objective] ?? 'เลือกวัตถุประสงค์ให้ตรงกับผลลัพธ์ที่ต้องการ';
 
-  String _formatPeople(int value) => value.toString().replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'),
-        (match) => ',',
-      );
+  String _formatPeople(int value) => value.toString();
 
   String get reachEstimate {
     final dailyAmount = double.tryParse(budget.text.trim());
