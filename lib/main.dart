@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_gate.dart';
 
 void main() => runApp(const AdnexaApp());
@@ -240,10 +242,91 @@ class _CampaignPageState extends State<CampaignPage> {
   final budget = TextEditingController(text: '300');
   String platform = 'Meta Ads';
   String objective = 'Traffic';
-  final drafts = <String>[];
+  List<Map<String, dynamic>> drafts = [];
+  bool loadingDrafts = true;
+  bool savingDraft = false;
+
+  String get _storageKey =>
+      'adnexa_campaign_drafts_\${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
 
   @override
-  void dispose() { name.dispose(); budget.dispose(); super.dispose(); }
+  void initState() {
+    super.initState();
+    _loadDrafts();
+  }
+
+  Future<void> _loadDrafts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_storageKey);
+      if (raw != null) {
+        final decoded = jsonDecode(raw);
+        if (decoded is List) {
+          drafts = decoded
+              .whereType<Map>()
+              .map((item) => Map<String, dynamic>.from(item))
+              .toList();
+        }
+      }
+    } catch (_) {
+      drafts = [];
+    }
+    if (mounted) setState(() => loadingDrafts = false);
+  }
+
+  Future<void> _persistDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_storageKey, jsonEncode(drafts));
+  }
+
+  Future<void> _saveDraft() async {
+    final amount = double.tryParse(budget.text.trim());
+    if (name.text.trim().isEmpty || amount == null || amount <= 0) {
+      notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
+      return;
+    }
+    setState(() => savingDraft = true);
+    final draft = <String, dynamic>{
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'name': name.text.trim(),
+      'platform': platform,
+      'objective': objective,
+      'budget': amount,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    try {
+      drafts.insert(0, draft);
+      await _persistDrafts();
+      name.clear();
+      if (mounted) {
+        setState(() {});
+        notice(context, 'บันทึกฉบับร่างไว้ในเครื่องแล้ว');
+      }
+    } catch (_) {
+      drafts.removeWhere((item) => item['id'] == draft['id']);
+      if (mounted) notice(context, 'บันทึกไม่สำเร็จ กรุณาลองใหม่');
+    } finally {
+      if (mounted) setState(() => savingDraft = false);
+    }
+  }
+
+  Future<void> _deleteDraft(String id) async {
+    final removed = drafts.where((item) => item['id'] == id).toList();
+    setState(() => drafts.removeWhere((item) => item['id'] == id));
+    try {
+      await _persistDrafts();
+    } catch (_) {
+      setState(() => drafts.insertAll(0, removed));
+      notice(context, 'ลบไม่สำเร็จ กรุณาลองใหม่');
+    }
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    budget.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => PageBody(children: [
@@ -251,7 +334,12 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 16),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads', 'Google Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(
+      value: platform,
+      items: ['Meta Ads', 'TikTok Ads', 'Google Ads']
+          .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: (v) { if (v != null) setState(() => platform = v); },
+    ),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -259,29 +347,74 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 15),
     const Text('Objective', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: objective, items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => objective = v!)),
+    DropdownButtonFormField<String>(
+      value: objective,
+      items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales']
+          .map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: (v) { if (v != null) setState(() => objective = v); },
+    ),
     const SizedBox(height: 15),
     const Text('Daily budget (THB)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
+    TextField(
+      controller: budget,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: const InputDecoration(prefixText: '฿  ', hintText: '300'),
+    ),
     const SizedBox(height: 18),
-    SizedBox(width: double.infinity, child: FilledButton.icon(
-      onPressed: () {
-        final amount = double.tryParse(budget.text);
-        if (name.text.trim().isEmpty || amount == null || amount <= 0) {
-          notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
-          return;
-        }
-        setState(() => drafts.insert(0, '${name.text.trim()} • $platform • $objective • ฿${amount.toStringAsFixed(0)}/day'));
-        name.clear();
-        notice(context, 'บันทึก Draft ในหน่วยความจำของแอปแล้ว (ยังไม่ส่งโฆษณาจริง)');
-      },
-      icon: const Icon(Icons.save_outlined), label: const Text('Save draft'),
-      style: FilledButton.styleFrom(backgroundColor: violet, padding: const EdgeInsets.symmetric(vertical: 14)),
-    )),
+    SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: savingDraft ? null : _saveDraft,
+        icon: savingDraft
+            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+            : const Icon(Icons.save_outlined),
+        label: Text(savingDraft ? 'Saving...' : 'Save draft'),
+        style: FilledButton.styleFrom(
+          backgroundColor: violet,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    ),
     const SectionTitle('Saved drafts'),
-    if (drafts.isEmpty) const EmptyState(text: 'ยังไม่มีแคมเปญฉบับร่าง'),
-    ...drafts.map((d) => Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(13), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(13)), child: Text(d, style: const TextStyle(fontSize: 12)))),
+    if (loadingDrafts)
+      const Center(child: Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      ))
+    else if (drafts.isEmpty)
+      const EmptyState(text: 'ยังไม่มีแคมเปญฉบับร่าง')
+    else
+      ...drafts.map((draft) => CardPanel(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.campaign_outlined, color: Color(0xFFB8A5FF)),
+            const SizedBox(width: 10),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('\${draft['name'] ?? 'Untitled'}',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                const SizedBox(height: 5),
+                Text('\${draft['platform']} • \${draft['objective']}',
+                    style: const TextStyle(color: muted, fontSize: 11)),
+                const SizedBox(height: 4),
+                Text('฿\${(draft['budget'] as num?)?.toStringAsFixed(0) ?? '0'} / วัน',
+                    style: const TextStyle(color: Color(0xFFC7B5FF), fontSize: 11)),
+                const SizedBox(height: 5),
+                const Text('ฉบับร่างเท่านั้น • ยังไม่ยิงโฆษณาจริง',
+                    style: TextStyle(color: muted, fontSize: 10)),
+              ],
+            )),
+            IconButton(
+              tooltip: 'Delete draft',
+              onPressed: () => _deleteDraft('\${draft['id']}'),
+              icon: const Icon(Icons.delete_outline, color: muted, size: 20),
+            ),
+          ],
+        ),
+      )),
   ]);
 }
 
