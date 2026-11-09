@@ -161,27 +161,10 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
           email: email,
           password: _password.text,
         );
-        String? verificationError;
-        try {
-          await FirebaseAuth.instance.setLanguageCode('th');
-          await credential.user?.sendEmailVerification();
-        } on FirebaseAuthException catch (error) {
-          verificationError = error.code;
-        } catch (error) {
-          verificationError = 'ส่งคำขอไม่สำเร็จ: ${error.runtimeType}';
-        } finally {
-          // A newly-created account must not remain signed in before email verification.
-          await FirebaseAuth.instance.signOut();
-        }
-        if (mounted) {
-          setState(() {
-            _register = false;
-            _status = verificationError == null
-                ? 'ลงทะเบียนสำเร็จแล้ว กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี จากนั้นเข้าสู่ระบบ'
-                : 'ลงทะเบียนสำเร็จแล้ว แต่ส่งอีเมลยืนยันไม่สำเร็จ ($verificationError) กรุณากดลืม/ส่งยืนยันใหม่หรือติดต่อผู้ดูแล';
-            _error = null;
-          });
-        }
+        // Keep the new account signed in. AuthGate will automatically show
+        // VerifyEmailPage for this unverified user, without returning to login.
+        await FirebaseAuth.instance.setLanguageCode('th');
+        await credential.user?.sendEmailVerification();
       } else {
         await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
