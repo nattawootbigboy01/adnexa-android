@@ -434,7 +434,7 @@ class _CampaignPageState extends State<CampaignPage> {
         }
         final startAge = int.tryParse(ageStart.text.trim());
         final endAge = int.tryParse(ageEnd.text.trim());
-        if (startAge == null || endAge == null || startAge < 1 || endAge > 60 || startAge > endAge) { notice(context, 'กรุณากำหนดช่วงอายุ 1–60 ปี โดยอายุเริ่มต้นต้องไม่มากกว่าอายุสิ้นสุด'); return; }
+        if (startAge == null || endAge == null || startAge < 1 || startAge > 60 || endAge < 1 || endAge > 60 || startAge > endAge) { notice(context, 'กรุณากำหนดช่วงอายุ 1–60 ปี โดยอายุเริ่มต้นต้องไม่มากกว่าอายุสิ้นสุด'); return; }
         if (campaignMode == 'AI' && aiPlan == null) { notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนบันทึก'); return; }
         if (campaignMode == 'Manual' && manualAudience.text.trim().isEmpty) { notice(context, 'กรุณาระบุกลุ่มลูกค้าในโหมดทำเอง'); return; }
         final targeting = campaignMode == 'AI' ? 'AI PLAN: ' + (aiPlan ?? '') + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี' : 'MANUAL: พื้นที่ประเทศไทย, กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี, เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
