@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const AdnexaApp());
 
@@ -238,6 +239,30 @@ class _CampaignPageState extends State<CampaignPage> {
   String platform = 'Meta Ads';
   String objective = 'Traffic';
   final drafts = <String>[];
+  bool draftsLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDrafts();
+  }
+
+  Future<void> _loadDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('campaign_drafts') ?? <String>[];
+    if (!mounted) return;
+    setState(() {
+      drafts
+        ..clear()
+        ..addAll(saved);
+      draftsLoading = false;
+    });
+  }
+
+  Future<void> _saveDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('campaign_drafts', drafts);
+  }
 
   @override
   void dispose() { name.dispose(); budget.dispose(); super.dispose(); }
@@ -270,14 +295,16 @@ class _CampaignPageState extends State<CampaignPage> {
           return;
         }
         setState(() => drafts.insert(0, '${name.text.trim()} • $platform • $objective • ฿${amount.toStringAsFixed(0)}/day'));
+        _saveDrafts();
         name.clear();
-        notice(context, 'บันทึก Draft ในหน่วยความจำของแอปแล้ว (ยังไม่ส่งโฆษณาจริง)');
+        notice(context, 'บันทึก Draft ลงในเครื่องแล้ว (ยังไม่ส่งโฆษณาจริง)');
       },
       icon: const Icon(Icons.save_outlined), label: const Text('Save draft'),
       style: FilledButton.styleFrom(backgroundColor: violet, padding: const EdgeInsets.symmetric(vertical: 14)),
     )),
     const SectionTitle('Saved drafts'),
-    if (drafts.isEmpty) const EmptyState(text: 'ยังไม่มีแคมเปญฉบับร่าง'),
+    if (draftsLoading) const EmptyState(text: 'กำลังโหลดแคมเปญที่บันทึกไว้...'),
+    if (!draftsLoading && drafts.isEmpty) const EmptyState(text: 'ยังไม่มีแคมเปญฉบับร่าง'),
     ...drafts.map((d) => Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(13), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(13)), child: Text(d, style: const TextStyle(fontSize: 12)))),
   ]);
 }
