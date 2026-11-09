@@ -320,33 +320,112 @@ class AiPage extends StatefulWidget {
 
 class _AiPageState extends State<AiPage> {
   final product = TextEditingController();
-  String tone = 'Professional';
+  final audience = TextEditingController();
+  final budget = TextEditingController(text: '300');
+  String tone = 'เป็นกันเอง';
   String? output;
+  String? audiencePlan;
+  String? estimate;
+
   @override
-  void dispose() { product.dispose(); super.dispose(); }
+  void dispose() {
+    product.dispose();
+    audience.dispose();
+    budget.dispose();
+    super.dispose();
+  }
+
+  void analyze() {
+    final item = product.text.trim();
+    final amount = double.tryParse(budget.text.trim());
+    if (item.isEmpty) {
+      notice(context, 'กรุณาระบุสินค้า或บริการก่อน');
+      return;
+    }
+    if (amount == null || amount < 50 || amount > 1000000) {
+      notice(context, 'กรุณาระบุงบประมาณตั้งแต่ 50 ถึง 1,000,000 บาท');
+      return;
+    }
+
+    final description = audience.text.trim();
+    final lower = item.toLowerCase();
+    String segment;
+    if (lower.contains('อาหาร') || lower.contains('กาแฟ') || lower.contains('ขนม') || lower.contains('food')) {
+      segment = 'คนในพื้นที่ที่สนใจอาหาร คาเฟ่ ร้านใกล้บ้าน และรีวิวร้าน';
+    } else if (lower.contains('เสื้อ') || lower.contains('แฟชั่น') || lower.contains('fashion')) {
+      segment = 'ผู้ที่สนใจแฟชั่น เสื้อผ้า การแต่งตัว และช้อปปิ้งออนไลน์';
+    } else if (lower.contains('รถ') || lower.contains('ซ่อม') || lower.contains('motor')) {
+      segment = 'เจ้าของรถและผู้ที่สนใจบริการดูแลหรือซ่อมบำรุงยานพาหนะ';
+    } else if (lower.contains('เรียน') || lower.contains('คอร์ส') || lower.contains('สอน')) {
+      segment = 'ผู้ที่สนใจพัฒนาทักษะ การเรียนรู้ และคอร์สเฉพาะทาง';
+    } else {
+      segment = 'ผู้ที่มีความสนใจเกี่ยวข้องกับสินค้า/บริการ และกลุ่มลูกค้าในพื้นที่ให้บริการ';
+    }
+
+    // Illustrative planning assumptions only: CPM 30-100 THB, CTR 0.5%-2%.
+    final impressionsLow = (amount / 100 * 1000).round();
+    final impressionsHigh = (amount / 30 * 1000).round();
+    final clicksLow = (impressionsLow * 0.005).round();
+    final clicksHigh = (impressionsHigh * 0.02).round();
+    final customAudience = description.isEmpty ? 'ยังไม่ได้ระบุกลุ่มลูกค้าเฉพาะ' : description;
+
+    setState(() {
+      audiencePlan = 'กลุ่มเป้าหมายตั้งต้น: $segment\nกลุ่มลูกค้าที่คุณระบุ: $customAudience\nแนวทาง: เริ่มทดสอบในพื้นที่ให้บริการและปรับกลุ่มตามผลตอบรับจริง';
+      output = 'พบกับ $item ที่ออกแบบมาเพื่อตอบโจทย์คุณ เลือกสิ่งที่ใช่และติดต่อเราได้วันนี้!\nโทนข้อความ: $tone';
+      estimate = 'งบประมาณที่ใช้คำนวณ: ฿${amount.toStringAsFixed(0)} ต่อวัน\nการแสดงผลโดยประมาณ: ${impressionsLow.toString()}–${impressionsHigh.toString()} ครั้ง/วัน\nคลิกโดยประมาณ: ${clicksLow.toString()}–${clicksHigh.toString()} ครั้ง/วัน';
+    });
+  }
+
   @override
   Widget build(BuildContext context) => PageBody(children: [
-    Container(padding: const EdgeInsets.all(17), decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)])), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
-      SizedBox(height: 10),
-      Text('Creative intelligence', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-      SizedBox(height: 5),
-      Text('สร้างแนวคิดข้อความโฆษณาเบื้องต้นได้ในแอป', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
-    ])),
-    const SectionTitle('What are you promoting?'),
-    TextField(controller: product, maxLines: 3, decoration: const InputDecoration(hintText: 'อธิบายสินค้า บริการ หรือข้อเสนอของคุณ')),
-    const SectionTitle('Writing tone'),
-    DropdownButtonFormField<String>(value: tone, items: ['Professional', 'Friendly', 'Luxury', 'Urgent'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => tone = v!)),
-    const SizedBox(height: 14),
-    SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () {
-      if (product.text.trim().isEmpty) { notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน'); return; }
-      setState(() => output = 'พบกับ ${product.text.trim()} ที่ตอบโจทย์คุณในทุกวัน เลือกสิ่งที่ใช่ พร้อมเริ่มต้นได้แล้ววันนี้! [โทน: $tone]');
-    }, icon: const Icon(Icons.auto_awesome), label: const Text('Generate demo copy'), style: FilledButton.styleFrom(backgroundColor: violet))),
-    if (output != null) ...[
-      const SectionTitle('Generated concept'),
+    Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)]),
+      ),
+      child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
+        SizedBox(height: 10),
+        Text('ADNEXA Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        SizedBox(height: 5),
+        Text('วิเคราะห์เบื้องต้น วางกลุ่มเป้าหมาย และประเมินผลตามงบประมาณ', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
+      ]),
+    ),
+    const SectionTitle('1. สินค้าหรือบริการ'),
+    TextField(controller: product, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น ร้านกาแฟเดลิเวอรี / บริการล้างแอร์')),
+    const SectionTitle('2. ลูกค้าที่ต้องการเข้าถึง'),
+    TextField(controller: audience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น คนทำงานอายุ 25–40 ปี ในขอนแก่น (ไม่บังคับ)')),
+    const SectionTitle('3. งบประมาณต่อวัน (บาท)'),
+    TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
+    const SectionTitle('4. โทนข้อความโฆษณา'),
+    DropdownButtonFormField<String>(
+      value: tone,
+      items: ['เป็นกันเอง', 'มืออาชีพ', 'พรีเมียม', 'เร่งให้ตัดสินใจ'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+      onChanged: (v) => setState(() => tone = v ?? tone),
+    ),
+    const SizedBox(height: 16),
+    SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: analyze,
+        icon: const Icon(Icons.auto_awesome),
+        label: const Text('วิเคราะห์และวางแผนโฆษณา'),
+        style: FilledButton.styleFrom(backgroundColor: violet, padding: const EdgeInsets.symmetric(vertical: 14)),
+      ),
+    ),
+    if (audiencePlan != null) ...[
+      const SectionTitle('ผลวิเคราะห์กลุ่มเป้าหมาย'),
+      CardPanel(child: SelectableText(audiencePlan!, style: const TextStyle(fontSize: 13, height: 1.6))),
+      const SectionTitle('ข้อความโฆษณาตัวอย่าง'),
       CardPanel(child: SelectableText(output!, style: const TextStyle(fontSize: 13, height: 1.6))),
+      const SectionTitle('ประมาณการผลลัพธ์'),
+      CardPanel(child: SelectableText(estimate!, style: const TextStyle(fontSize: 13, height: 1.6))),
     ],
-    const Text('หมายเหตุ: เป็นตัวอย่างสร้างข้อความแบบออฟไลน์ ยังไม่ได้เชื่อม AI API', style: TextStyle(color: muted, fontSize: 10)),
+    const Text(
+      'ข้อจำกัด: ระบบนี้เป็นเครื่องมือวางแผนแบบออฟไลน์ ไม่ได้เชื่อม AI หรือข้อมูลโฆษณาจริง ตัวเลขใช้สมมติฐาน CPM ฿30–฿100 และ CTR 0.5%–2% เพื่อแสดงช่วงตัวอย่างเท่านั้น ผลจริงอาจแตกต่างมากและไม่รับประกัน',
+      style: TextStyle(color: muted, fontSize: 10, height: 1.5),
+    ),
   ]);
 }
 
