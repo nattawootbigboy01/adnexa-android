@@ -339,7 +339,7 @@ class _AiPageState extends State<AiPage> {
     final item = product.text.trim();
     final amount = double.tryParse(budget.text.trim());
     if (item.isEmpty) {
-      notice(context, 'กรุณาระบุสินค้า或บริการก่อน');
+      notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน');
       return;
     }
     if (amount == null || amount < 50 || amount > 1000000) {
