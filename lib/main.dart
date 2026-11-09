@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'auth_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const AdnexaApp());
@@ -25,7 +27,7 @@ class AdnexaApp extends StatelessWidget {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       ),
     ),
-    home: const AppShell(),
+    home: const AuthGate(child: AppShell()),
   );
 }
 
@@ -62,6 +64,7 @@ class _AppShellState extends State<AppShell> {
           ]),
           const Spacer(),
           IconButton(onPressed: () => notice(context, 'ระบบแจ้งเตือนจะเปิดใช้เมื่อเชื่อมต่อ Backend'), icon: const Icon(Icons.notifications_none_rounded)),
+          IconButton(tooltip: 'ออกจากระบบ', onPressed: () async { await FirebaseAuth.instance.signOut(); }, icon: const Icon(Icons.logout_rounded)),
           const CircleAvatar(radius: 17, backgroundColor: Color(0xFF29243C), child: Icon(Icons.person_outline, size: 19, color: Color(0xFFC7B8FF))),
         ]),
       ),
