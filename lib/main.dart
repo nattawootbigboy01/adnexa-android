@@ -247,7 +247,7 @@ class _CampaignPageState extends State<CampaignPage> {
   bool savingDraft = false;
 
   String get _storageKey =>
-      'adnexa_campaign_drafts_\${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
+      'adnexa_campaign_drafts_${FirebaseAuth.instance.currentUser?.uid ?? 'guest'}';
 
   @override
   void initState() {
@@ -394,13 +394,13 @@ class _CampaignPageState extends State<CampaignPage> {
             Expanded(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('\${draft['name'] ?? 'Untitled'}',
+                Text('${draft['name'] ?? 'Untitled'}',
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 const SizedBox(height: 5),
-                Text('\${draft['platform']} • \${draft['objective']}',
+                Text('${draft['platform']} • ${draft['objective']}',
                     style: const TextStyle(color: muted, fontSize: 11)),
                 const SizedBox(height: 4),
-                Text('฿\${(draft['budget'] as num?)?.toStringAsFixed(0) ?? '0'} / วัน',
+                Text('฿${(draft['budget'] as num?)?.toStringAsFixed(0) ?? '0'} / วัน',
                     style: const TextStyle(color: Color(0xFFC7B5FF), fontSize: 11)),
                 const SizedBox(height: 5),
                 const Text('ฉบับร่างเท่านั้น • ยังไม่ยิงโฆษณาจริง',
@@ -409,7 +409,7 @@ class _CampaignPageState extends State<CampaignPage> {
             )),
             IconButton(
               tooltip: 'Delete draft',
-              onPressed: () => _deleteDraft('\${draft['id']}'),
+              onPressed: () => _deleteDraft('${draft['id']}'),
               icon: const Icon(Icons.delete_outline, color: muted, size: 20),
             ),
           ],
