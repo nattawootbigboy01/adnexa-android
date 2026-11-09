@@ -310,14 +310,120 @@ class _CampaignPageState extends State<CampaignPage> {
     }
   }
 
+  Future<void> _editDraft(Map<String, dynamic> draft) async {
+    final nameController = TextEditingController(text: '${draft['name'] ?? ''}');
+    final budgetController = TextEditingController(
+      text: '${draft['budget'] ?? 300}',
+    );
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('แก้ไขแคมเปญฉบับร่าง'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'ชื่อแคมเปญ'),
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'กรุณากรอกชื่อแคมเปญ'
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: budgetController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'งบประมาณต่อวัน (บาท)'),
+                validator: (value) {
+                  final amount = double.tryParse((value ?? '').trim());
+                  if (amount == null || amount <= 0) {
+                    return 'กรุณากรอกงบประมาณให้ถูกต้อง';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('ยกเลิก'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (!formKey.currentState!.validate()) return;
+              Navigator.pop(dialogContext, {
+                'name': nameController.text.trim(),
+                'budget': double.parse(budgetController.text.trim()),
+              });
+            },
+            child: const Text('บันทึกการแก้ไข'),
+          ),
+        ],
+      ),
+    );
+
+    nameController.dispose();
+    budgetController.dispose();
+    if (result == null) return;
+
+    final index = drafts.indexWhere((item) => item['id'] == draft['id']);
+    if (index < 0) return;
+    final previous = Map<String, dynamic>.from(drafts[index]);
+    setState(() {
+      drafts[index] = {
+        ...drafts[index],
+        'name': result['name'],
+        'budget': result['budget'],
+      };
+    });
+    try {
+      await _persistDrafts();
+      if (mounted) notice(context, 'แก้ไขแคมเปญฉบับร่างแล้ว');
+    } catch (_) {
+      if (mounted) {
+        setState(() => drafts[index] = previous);
+        notice(context, 'บันทึกการแก้ไขไม่สำเร็จ กรุณาลองใหม่');
+      }
+    }
+  }
+
   Future<void> _deleteDraft(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ลบแคมเปญฉบับร่าง?'),
+        content: const Text('เมื่อลบแล้ว รายการนี้จะหายจากรายการฉบับร่างในเครื่อง'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('ยกเลิก'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('ยืนยันลบ'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
     final removed = drafts.where((item) => item['id'] == id).toList();
     setState(() => drafts.removeWhere((item) => item['id'] == id));
     try {
       await _persistDrafts();
+      if (mounted) notice(context, 'ลบฉบับร่างแล้ว');
     } catch (_) {
-      setState(() => drafts.insertAll(0, removed));
-      notice(context, 'ลบไม่สำเร็จ กรุณาลองใหม่');
+      if (mounted) {
+        setState(() => drafts.insertAll(0, removed));
+        notice(context, 'ลบไม่สำเร็จ กรุณาลองใหม่');
+      }
     }
   }
 
@@ -407,6 +513,11 @@ class _CampaignPageState extends State<CampaignPage> {
                     style: TextStyle(color: muted, fontSize: 10)),
               ],
             )),
+            IconButton(
+              tooltip: 'Edit draft',
+              onPressed: () => _editDraft(draft),
+              icon: const Icon(Icons.edit_outlined, color: Color(0xFFB8A5FF), size: 20),
+            ),
             IconButton(
               tooltip: 'Delete draft',
               onPressed: () => _deleteDraft('${draft['id']}'),
