@@ -477,7 +477,7 @@ class _CampaignPageState extends State<CampaignPage> {
     final suggestedAge = (lower.contains('เด็ก') || lower.contains('ของเล่น') || lower.contains('baby')) ? '25–44 ปี (ผู้ใหญ่/ผู้ปกครอง)' : (lower.contains('ผู้สูงอายุ') || lower.contains('สุขภาพวัยเกษียณ')) ? '45–60 ปี' : (lower.contains('วัยรุ่น') || lower.contains('นักศึกษา')) ? '18–25 ปี' : '18–44 ปี';
     setState(() {
       aiAgeSuggestion = suggestedAge;
-      aiPlan = 'กลุ่มเป้าหมายแนะนำ: ' + audience + '\nพื้นที่เป้าหมาย: ประเทศไทยทั้งประเทศ\nช่วงอายุที่แนะนำ: ' + suggestedAge + '\nชิ้นงานแนะนำ: ' + creative + '\nเป้าหมาย: ' + (objectiveLabels[objective] ?? objective) + '\n\nคำแนะนำนี้มาจากตัวช่วยภายในแอปแบบออฟไลน์ ยังไม่ใช่ AI ออนไลน์ ต้องตรวจทานก่อนใช้';
+      aiPlan = 'กลุ่มเป้าหมายแนะนำ: ' + audience + '\nพื้นที่เป้าหมาย: ประเทศไทยทั้งประเทศ\nช่วงอายุที่แนะนำ: ' + suggestedAge + '\nชิ้นงานแนะนำ: ' + creative + '\nเป้าหมาย: ' + (objectiveLabels[objective] ?? objective) + '\n\nคำแนะนำนี้สร้างจากกฎภายในแอปแบบออฟไลน์ ไม่ได้เรียกใช้ AI ออนไลน์หรือข้อมูลบัญชีโฆษณา โปรดตรวจทานก่อนนำไปใช้';
     });
   }
 
@@ -949,8 +949,7 @@ class _AiPageState extends State<AiPage> {
 
   void analyze() {
     final item = product.text.trim();
-    final amount = double.tryParse(budget.text.trim());
-    if (item.isEmpty) {
+        if (item.isEmpty) {
       notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน');
       return;
     }
