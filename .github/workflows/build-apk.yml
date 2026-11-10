@@ -51,6 +51,8 @@ jobs:
           PY
       - name: Install dependencies
         run: flutter pub get
+      - name: Run widget tests
+        run: flutter test
       # Deprecation notices are informational; fail only on analyzer errors.
       - name: Analyze
         run: flutter analyze --no-fatal-infos
