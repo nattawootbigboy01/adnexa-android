@@ -57,6 +57,8 @@ jobs:
       # Deprecation notices are informational; fail only on analyzer errors.
       - name: Analyze
         run: flutter analyze --no-fatal-infos
+      - name: Run widget and unit tests
+        run: flutter test
       - name: Build release APK
         run: >-
           flutter build apk --release
