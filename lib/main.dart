@@ -555,7 +555,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: const [DropdownMenuItem(value: 'Meta Ads', child: Text('Meta Ads'))], onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(isExpanded: true, value: platform, items: const [DropdownMenuItem(value: 'Meta Ads', child: Text('Meta Ads'))], onChanged: (v) => setState(() => platform = v!)),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -564,6 +564,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const Text('วัตถุประสงค์การโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
     DropdownButtonFormField<String>(
+      isExpanded: true,
       value: objective,
       items: objectiveLabels.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
       onChanged: (v) => setState(() => objective = v ?? objective),
@@ -582,7 +583,7 @@ class _CampaignPageState extends State<CampaignPage> {
       const SectionTitle('กลุ่มลูกค้า'),
       TextField(controller: manualAudience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น เจ้าของธุรกิจ / คนทำงาน')),
       const SectionTitle('เพศ'),
-      DropdownButtonFormField<String>(value: manualGender, items: ['ทุกเพศ', 'ชาย', 'หญิง'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualGender = v ?? manualGender)),
+      DropdownButtonFormField<String>(isExpanded: true, value: manualGender, items: ['ทุกเพศ', 'ชาย', 'หญิง'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualGender = v ?? manualGender)),
       const SectionTitle('ความสนใจ (ถ้ามี)'),
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
     ],
@@ -632,6 +633,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const Text('ระยะเวลาโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
     DropdownButtonFormField<int>(
+      isExpanded: true,
       value: durationDays,
       items: const [1, 3, 7, 14, 30].map((days) => DropdownMenuItem(value: days, child: Text('$days วัน'))).toList(),
       onChanged: (value) => setState(() => durationDays = value ?? durationDays),
