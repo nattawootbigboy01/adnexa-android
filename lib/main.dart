@@ -9,14 +9,14 @@ void main() => runApp(const AdnexaApp());
 
 const bg = Color(0xFF08090D);
 const panel = Color(0xFF141620);
-const violet = Color(0xFF9270FF);
+const violet = Color(0xFF368CFF);
 const muted = Color(0xFF9295A5);
 
 class AdnexaApp extends StatelessWidget {
   const AdnexaApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'ADNEXA Ads',
+    title: 'ADNEXA ADS • ยิงแอดระดับเทพ',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -25,7 +25,7 @@ class AdnexaApp extends StatelessWidget {
       useMaterial3: true,
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1B1E2A),
+        fillColor: const Color(0xFF121A26),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       ),
     ),
@@ -151,13 +151,27 @@ class BrandMark extends StatelessWidget {
       gradient: const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFE1D9FF), Color(0xFF9270FF), Color(0xFF4D35A8)],
+        colors: [Color(0xFFE1D9FF), Color(0xFF368CFF), Color(0xFF4D35A8)],
       ),
       boxShadow: [
         BoxShadow(color: violet.withOpacity(.25), blurRadius: 18, offset: const Offset(0, 5)),
       ],
     ),
-    child: Icon(Icons.auto_graph_rounded, color: Colors.white, size: size * .58),
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        Text('A', style: TextStyle(
+          fontSize: size * .68, height: 1, fontWeight: FontWeight.w900,
+          foreground: Paint()..shader = const LinearGradient(
+            colors: [Color(0xFFFFFFFF), Color(0xFFB8C5D8), Color(0xFF71849D)],
+          ).createShader(const Rect.fromLTWH(0, 0, 70, 70)),
+        )),
+        Positioned(
+          right: size * .07, top: size * .12,
+          child: Icon(Icons.trending_up_rounded, color: const Color(0xFF258BFF), size: size * .43),
+        ),
+      ],
+    ),
   );
 }
 
@@ -184,7 +198,7 @@ class MetricCard extends StatelessWidget {
     padding: const EdgeInsets.all(15),
     decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(.055))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(icon, color: const Color(0xFFB8A5FF), size: 20),
+      Icon(icon, color: const Color(0xFF78B8FF), size: 20),
       const SizedBox(height: 13),
       Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
       const SizedBox(height: 4),
@@ -274,7 +288,7 @@ class _DashboardPageState extends State<DashboardPage> {
           borderRadius: BorderRadius.circular(22),
           gradient: const LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [Color(0xFF292244), Color(0xFF171925), Color(0xFF11131B)],
+            colors: [Color(0xFF14263D), Color(0xFF171925), Color(0xFF11131B)],
           ),
           border: Border.all(color: violet.withOpacity(.22)),
         ),
@@ -368,7 +382,7 @@ class PlatformTile extends StatelessWidget {
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withOpacity(.05))),
     child: Row(children: [
-      Container(width: 38, height: 38, decoration: BoxDecoration(color: const Color(0xFF29243C), borderRadius: BorderRadius.circular(11)), child: Icon(icon, color: const Color(0xFFC4B3FF))),
+      Container(width: 38, height: 38, decoration: BoxDecoration(color: const Color(0xFF14263D), borderRadius: BorderRadius.circular(11)), child: Icon(icon, color: const Color(0xFF78B8FF))),
       const SizedBox(width: 11),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)), Text(subtitle, style: const TextStyle(color: muted, fontSize: 10))])),
       Text(status, style: const TextStyle(color: muted, fontSize: 10)),
@@ -583,11 +597,11 @@ class _CampaignPageState extends State<CampaignPage> {
       Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Text('อายุเริ่มต้น', style: TextStyle(color: muted, fontSize: 10)),
-          Text('${ageRange.start.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+          Text('${ageRange.start.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
         ])),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
           const Text('อายุสิ้นสุด', style: TextStyle(color: muted, fontSize: 10)),
-          Text('${ageRange.end.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+          Text('${ageRange.end.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
         ])),
       ]),
       RangeSlider(
@@ -604,7 +618,7 @@ class _CampaignPageState extends State<CampaignPage> {
       const SizedBox(height: 8),
       CardPanel(child: Row(children: [
         const Expanded(child: Text('คำแนะนำช่วงอายุจาก AI', style: TextStyle(fontSize: 11, color: muted))),
-        Text(aiAgeSuggestion!, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFBCA9FF))),
+        Text(aiAgeSuggestion!, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF8CC7FF))),
         const SizedBox(width: 8),
         TextButton(onPressed: () {
           final match = RegExp(r'(\d+)\s*[–-]\s*(\d+)').firstMatch(aiAgeSuggestion!);
@@ -630,7 +644,7 @@ class _CampaignPageState extends State<CampaignPage> {
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('ประมาณการจำนวนคนที่อาจเข้าถึงได้', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
       const SizedBox(height: 7),
-      Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+      Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
       const SizedBox(height: 5),
       Text('งบรวม: ฿${((double.tryParse(budget.text.trim()) ?? 0) * durationDays).toStringAsFixed(0)} ตลอด $durationDays วัน', style: const TextStyle(fontSize: 11, color: muted)),
       const SizedBox(height: 6),
@@ -684,8 +698,8 @@ class _ModeCard extends StatelessWidget {
     borderRadius: BorderRadius.circular(16),
     child: Container(
       padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(color: selected ? const Color(0xFF29213F) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withOpacity(.07), width: selected ? 1.5 : 1)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: selected ? const Color(0xFFC7B5FF) : muted, size: 22), const SizedBox(height: 9), Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: selected ? Colors.white : muted)), const SizedBox(height: 4), Text(subtitle, style: const TextStyle(fontSize: 10, color: muted)), const SizedBox(height: 7), Text(selected ? 'SELECTED' : 'เลือกโหมดนี้', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: selected ? const Color(0xFFBCA9FF) : muted))]),
+      decoration: BoxDecoration(color: selected ? const Color(0xFF14263D) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withOpacity(.07), width: selected ? 1.5 : 1)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: selected ? const Color(0xFF8CC7FF) : muted, size: 22), const SizedBox(height: 9), Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: selected ? Colors.white : muted)), const SizedBox(height: 4), Text(subtitle, style: const TextStyle(fontSize: 10, color: muted)), const SizedBox(height: 7), Text(selected ? 'SELECTED' : 'เลือกโหมดนี้', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: selected ? const Color(0xFF8CC7FF) : muted))]),
     ),
   );
 }
@@ -1028,7 +1042,7 @@ class _AiPageState extends State<AiPage> {
         gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)]),
       ),
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
+        Icon(Icons.auto_awesome, color: Color(0xFF8CC7FF), size: 25),
         SizedBox(height: 10),
         Text('ADNEXA Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         SizedBox(height: 5),
