@@ -40,7 +40,7 @@ async function sha256(value) {
     .join("");
 }
 
-async function verifyFirebaseToken(token) {
+async function verifyFirebaseToken(token, includeClaims = false) {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
 
@@ -92,7 +92,7 @@ async function verifyFirebaseToken(token) {
   ) {
     throw new Error("Firebase authentication failed");
   }
-  return payload.sub;
+  return includeClaims ? payload : payload.sub;
 }
 
 async function authenticate(request) {
@@ -100,6 +100,99 @@ async function authenticate(request) {
   const match = authorization.match(/^Bearer (.+)$/);
   if (!match) throw new Error("Missing authentication");
   return verifyFirebaseToken(match[1]);
+}
+
+async function authenticateAdmin(request) {
+  const authorization = request.headers.get("Authorization") || "";
+  const match = authorization.match(/^Bearer (.+)$/);
+  if (!match) throw new Error("Missing authentication");
+  const claims = await verifyFirebaseToken(match[1], true);
+  if (claims.admin !== true && claims.role !== "admin") {
+    throw new Error("Administrator access required");
+  }
+  return claims.sub;
+}
+
+async function ensureAdminAuditTable(env) {
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_uid TEXT NOT NULL, action TEXT NOT NULL, created_at INTEGER NOT NULL)"
+  ).run();
+}
+
+async function recordAdminAction(env, adminUid, action) {
+  await ensureAdminAuditTable(env);
+  await env.DB.prepare(
+    "INSERT INTO admin_audit_log (admin_uid, action, created_at) VALUES (?, ?, ?)"
+  ).bind(adminUid, action, Math.floor(Date.now() / 1000)).run();
+}
+
+async function handleAdminOverview(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+
+  await ensureMetaTable(env);
+  const now = Math.floor(Date.now() / 1000);
+  const totals = await env.DB.prepare(
+    "SELECT COUNT(*) AS connected_users, SUM(CASE WHEN expires_at IS NULL OR expires_at > ? THEN 1 ELSE 0 END) AS active_connections FROM meta_connections"
+  ).bind(now).first();
+  await recordAdminAction(env, adminUid, "view_overview");
+  return json({
+    role: "admin",
+    metrics: {
+      connected_users: Number(totals && totals.connected_users || 0),
+      active_connections: Number(totals && totals.active_connections || 0)
+    },
+    capabilities: {
+      user_directory: false,
+      role_management: false,
+      campaign_controls: false,
+      ad_spend_controls: false
+    }
+  });
+}
+
+async function handleAdminConnections(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+
+  await ensureMetaTable(env);
+  const rows = await env.DB.prepare(
+    "SELECT user_id, meta_user_id, meta_name, expires_at, updated_at FROM meta_connections ORDER BY updated_at DESC LIMIT 100"
+  ).all();
+  await recordAdminAction(env, adminUid, "view_meta_connections");
+  return json({
+    connections: (rows.results || []).map(row => ({
+      user_id: row.user_id,
+      meta_user_id: row.meta_user_id,
+      meta_name: row.meta_name,
+      expires_at: row.expires_at,
+      updated_at: row.updated_at
+    }))
+  });
+}
+
+async function handleAdminAudit(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+
+  await ensureAdminAuditTable(env);
+  const rows = await env.DB.prepare(
+    "SELECT admin_uid, action, created_at FROM admin_audit_log ORDER BY created_at DESC LIMIT 50"
+  ).all();
+  await recordAdminAction(env, adminUid, "view_audit_log");
+  return json({ events: rows.results || [] });
 }
 
 async function createState(env, provider, userId) {
@@ -595,6 +688,16 @@ export default {
 
       if (method === "GET" && path === "/api/meta/callback") {
         return await handleMetaCallback(url, env);
+      }
+
+      if (method === "GET" && path === "/api/admin/overview") {
+        return await handleAdminOverview(request, env);
+      }
+      if (method === "GET" && path === "/api/admin/connections") {
+        return await handleAdminConnections(request, env);
+      }
+      if (method === "GET" && path === "/api/admin/audit") {
+        return await handleAdminAudit(request, env);
       }
 
       if (method === "GET" && path === "/api/meta/connection") {
