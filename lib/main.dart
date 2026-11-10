@@ -579,12 +579,20 @@ class _CampaignPageState extends State<CampaignPage> {
     if (campaignMode == 'Offline') ...[
       const SectionTitle('สินค้า/บริการที่ต้องการโปรโมต'),
       TextField(controller: productInfo, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น ร้านกาแฟเดลิเวอรี ราคาเริ่มต้น 45 บาท')),
-      CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (กำหนดให้อัตโนมัติ)', style: TextStyle(fontSize: 11, color: muted)))])),
+      CardPanel(child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.location_on_outlined, color: violet, size: 18),
+        SizedBox(height: 6),
+        Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (กำหนดให้อัตโนมัติ)', style: TextStyle(fontSize: 11, color: muted)),
+      ])),
       const SizedBox(height: 10),
       SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _makeAiPlan, icon: const Icon(Icons.auto_awesome), label: const Text('สร้างคำแนะนำเบื้องต้น'))),
       if (aiPlan != null) CardPanel(child: SelectableText(aiPlan!, style: const TextStyle(fontSize: 12, height: 1.6))),
     ] else ...[
-      CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (ไม่ต้องเลือกจังหวัด)', style: TextStyle(fontSize: 11, color: muted)))])),
+      CardPanel(child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(Icons.location_on_outlined, color: violet, size: 18),
+        SizedBox(height: 6),
+        Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (ไม่ต้องเลือกจังหวัด)', style: TextStyle(fontSize: 11, color: muted)),
+      ])),
       const SectionTitle('กลุ่มลูกค้า'),
       TextField(controller: manualAudience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น เจ้าของธุรกิจ / คนทำงาน')),
       const SectionTitle('เพศ'),
@@ -605,15 +613,12 @@ class _CampaignPageState extends State<CampaignPage> {
     const Text('เลือกกลุ่มผู้ชมได้ตั้งแต่อายุ 18–60 ปี ปรับช่วงอายุได้เองทั้งโหมดตัวช่วยออฟไลน์ และโหมดทำเอง', style: TextStyle(color: muted, fontSize: 10)),
     const SizedBox(height: 7),
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('อายุเริ่มต้น', style: TextStyle(color: muted, fontSize: 10)),
-          Text('${ageRange.start.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
-        ])),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          const Text('อายุสิ้นสุด', style: TextStyle(color: muted, fontSize: 10)),
-          Text('${ageRange.end.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
-        ])),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('อายุเริ่มต้น', style: TextStyle(color: muted, fontSize: 10)),
+        Text('${ageRange.start.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
+        const SizedBox(height: 8),
+        const Text('อายุสิ้นสุด', style: TextStyle(color: muted, fontSize: 10)),
+        Text('${ageRange.end.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
       ]),
       RangeSlider(
         values: ageRange,
@@ -627,10 +632,10 @@ class _CampaignPageState extends State<CampaignPage> {
     ])),
     if (campaignMode == 'Offline' && aiAgeSuggestion != null) ...[
       const SizedBox(height: 8),
-      CardPanel(child: Row(children: [
-        const Expanded(child: Text('คำแนะนำช่วงอายุจากตัวช่วย', style: TextStyle(fontSize: 11, color: muted))),
+      CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('คำแนะนำช่วงอายุจากตัวช่วย', style: TextStyle(fontSize: 11, color: muted)),
+        const SizedBox(height: 6),
         Text(aiAgeSuggestion!, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF8CC7FF))),
-        const SizedBox(width: 8),
         TextButton(onPressed: () {
           final match = RegExp(r'(\d+)\s*[–-]\s*(\d+)').firstMatch(aiAgeSuggestion!);
           if (match == null) return;
