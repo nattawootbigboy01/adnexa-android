@@ -553,9 +553,9 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 10),
     CardPanel(child: Text(campaignMode == 'Offline' ? 'โหมดตัวช่วย: ระบุสินค้า/บริการ แล้วให้ระบบเสนอแนวทาง โดยกำหนดพื้นที่โฆษณาเป็นประเทศไทยทั้งประเทศ' : 'โหมดทำเอง: คุณกำหนดกลุ่มลูกค้า อายุ เพศ และความสนใจได้เอง โดยพื้นที่โฆษณาล็อกไว้ในประเทศไทยทั้งประเทศ', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
     const SizedBox(height: 6),
-    const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('แพลตฟอร์มที่รองรับ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(isExpanded: true, value: platform, items: const [DropdownMenuItem(value: 'Meta Ads', child: Text('Meta Ads'))], onChanged: (v) => setState(() => platform = v!)),
+    const Align(alignment: Alignment.centerLeft, child: Chip(avatar: Icon(Icons.facebook, size: 16), label: Text('Meta Ads'))),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -563,11 +563,16 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 15),
     const Text('วัตถุประสงค์การโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(
-      isExpanded: true,
-      value: objective,
-      items: objectiveLabels.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
-      onChanged: (v) => setState(() => objective = v ?? objective),
+    Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: objectiveLabels.entries.map((entry) => ChoiceChip(
+        label: Text(entry.value),
+        selected: objective == entry.key,
+        onSelected: (selected) {
+          if (selected) setState(() => objective = entry.key);
+        },
+      )).toList(),
     ),
     Padding(padding: const EdgeInsets.only(top: 7), child: Text(objectiveDescription, style: const TextStyle(color: muted, fontSize: 11, height: 1.4))),
     const SizedBox(height: 15),
@@ -583,7 +588,16 @@ class _CampaignPageState extends State<CampaignPage> {
       const SectionTitle('กลุ่มลูกค้า'),
       TextField(controller: manualAudience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น เจ้าของธุรกิจ / คนทำงาน')),
       const SectionTitle('เพศ'),
-      DropdownButtonFormField<String>(isExpanded: true, value: manualGender, items: ['ทุกเพศ', 'ชาย', 'หญิง'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualGender = v ?? manualGender)),
+      Wrap(
+        spacing: 8,
+        children: ['ทุกเพศ', 'ชาย', 'หญิง'].map((value) => ChoiceChip(
+          label: Text(value),
+          selected: manualGender == value,
+          onSelected: (selected) {
+            if (selected) setState(() => manualGender = value);
+          },
+        )).toList(),
+      ),
       const SectionTitle('ความสนใจ (ถ้ามี)'),
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
     ],
@@ -632,11 +646,15 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 12),
     const Text('ระยะเวลาโฆษณา', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<int>(
-      isExpanded: true,
-      value: durationDays,
-      items: const [1, 3, 7, 14, 30].map((days) => DropdownMenuItem(value: days, child: Text('$days วัน'))).toList(),
-      onChanged: (value) => setState(() => durationDays = value ?? durationDays),
+    Wrap(
+      spacing: 8,
+      children: [1, 3, 7, 14, 30].map((days) => ChoiceChip(
+        label: Text('$days วัน'),
+        selected: durationDays == days,
+        onSelected: (selected) {
+          if (selected) setState(() => durationDays = days);
+        },
+      )).toList(),
     ),
     const SizedBox(height: 12),
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
