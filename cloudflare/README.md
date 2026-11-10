@@ -27,7 +27,7 @@ The Worker creates the `meta_connections` table in the existing D1 database on f
 
 1. Confirm the app has the Marketing API use case/product.
 2. Configure Facebook Login for Business and create a Login Configuration.
-3. Configure the Login Configuration with the minimum assets and permissions needed for the intended workflow. For read-only discovery, request only the approved read permissions. Add `ads_management` only when the product is ready to create/manage campaigns and Meta has approved the required access.
+3. Configure the Login Configuration with the minimum assets and permissions needed for the intended workflow. For account discovery and Insights reporting, verify that the user grant includes `ads_read` and that Meta has approved the required access. Do not request `ads_management` for this read-only phase; add it only in a later, separately reviewed campaign-management phase.
 4. Set the configuration's access-token type deliberately; this implementation stores the token returned by the authorization-code exchange and does not assume its lifetime.
 5. Add the exact redirect URI above to the valid OAuth redirect URI allowlist.
 6. Complete any required App Review, business verification, and Marketing API access requirements before inviting external customers.
@@ -42,6 +42,7 @@ All endpoints except the OAuth callback and health endpoints require a Firebase 
 - `GET /api/meta/callback` — consumes state, exchanges code server-side, verifies the Meta identity, and encrypts the token at rest.
 - `GET /api/meta/connection` — returns connection status and non-secret account identity.
 - `GET /api/meta/ad-accounts` — read-only list of up to 100 ad accounts per request. If `has_more` is true and `next_cursor` is present, request the next page with `?after=<URL-encoded next_cursor>`. The Worker accepts only the opaque cursor (not a caller-supplied URL) and returns the same account fields for each page.
+- `GET /api/meta/insights?ad_account_id=<numeric-id>&date_preset=last_7d` — read-only account-level performance summary. Supported presets: `yesterday`, `last_7d`, `last_14d`, `last_30d`, `last_90d`, `this_month`, and `last_month`. Returns spend, impressions, reach, clicks, CTR, CPC, CPM, frequency, currency, and reporting dates. Requires the connected user to have the necessary approved read permission (normally `ads_read`).
 - `DELETE /api/meta/connection` — removes the locally stored encrypted token.
 
 The Flutter app must open the returned `authorization_url` in the system browser, then poll `GET /api/meta/connection` after the callback. Access tokens are never returned to the app.
@@ -51,7 +52,7 @@ The Flutter app must open the returned `authorization_url` in the system browser
 - AES-256-GCM encrypts access tokens before they are written to D1. A unique 96-bit IV is generated for every encryption.
 - OAuth state is random, stored as a SHA-256 hash, expires after 10 minutes, and is consumed once.
 - The callback response does not echo Meta error text, authorization codes, state values, or tokens.
-- The current endpoint set is for account connection and read-only account discovery. It contains no campaign create, edit, pause, or publish operation.
+- The current endpoint set is for account connection, read-only account discovery, and read-only account-level Insights. It contains no campaign create, edit, pause, or publish operation.
 - Disconnect deletes the locally stored token. It does not claim to revoke the token at Meta.
 - Token expiry is recorded when Meta supplies `expires_in`; the implementation does not silently extend tokens.
 - Before production, run end-to-end tests with an app-role/test user and verify the exact Login Configuration behavior, token type, granted permissions, and account list response.
