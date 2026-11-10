@@ -44,12 +44,8 @@ async function verifyFirebaseToken(token) {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
 
-  const header = JSON.parse(
-    new TextDecoder().decode(decodeBase64Url(parts[0]))
-  );
-  const payload = JSON.parse(
-    new TextDecoder().decode(decodeBase64Url(parts[1]))
-  );
+  const header = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[0])));
+  const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
 
   if (header.alg !== "RS256" || !header.kid) {
     throw new Error("Invalid token header");
@@ -83,7 +79,7 @@ async function verifyFirebaseToken(token) {
   if (
     !valid ||
     payload.aud !== FIREBASE_PROJECT_ID ||
-    payload.iss !== \`https://securetoken.google.com/\${FIREBASE_PROJECT_ID}\` ||
+    payload.iss !== "https://securetoken.google.com/" + FIREBASE_PROJECT_ID ||
     typeof payload.sub !== "string" ||
     payload.sub.length === 0 ||
     payload.sub.length > 128 ||
@@ -113,21 +109,12 @@ async function createState(env, provider, userId) {
     .join("");
   const now = Math.floor(Date.now() / 1000);
 
-  await env.DB.prepare(
-    "DELETE FROM oauth_states WHERE expires_at <= ?"
-  ).bind(now).run();
+  await env.DB.prepare("DELETE FROM oauth_states WHERE expires_at <= ?")
+    .bind(now).run();
 
   await env.DB.prepare(
-    \`INSERT INTO oauth_states
-     (state_hash, provider, user_id, expires_at, created_at)
-     VALUES (?, ?, ?, ?, ?)\`
-  ).bind(
-    await sha256(state),
-    provider,
-    userId,
-    now + STATE_TTL,
-    now
-  ).run();
+    "INSERT INTO oauth_states (state_hash, provider, user_id, expires_at, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(await sha256(state), provider, userId, now + STATE_TTL, now).run();
 
   return state;
 }
@@ -136,19 +123,14 @@ async function consumeState(env, provider, state) {
   if (!/^[a-f0-9]{64}$/.test(state || "")) return null;
   const now = Math.floor(Date.now() / 1000);
   return env.DB.prepare(
-    \`DELETE FROM oauth_states
-     WHERE state_hash = ?
-       AND provider = ?
-       AND expires_at > ?
-     RETURNING user_id\`
+    "DELETE FROM oauth_states WHERE state_hash = ? AND provider = ? AND expires_at > ? RETURNING user_id"
   ).bind(await sha256(state), provider, now).first();
 }
 
 function requiredEnv(env, names) {
-  const missing = names.filter(name =>
+  return names.filter(name =>
     typeof env[name] !== "string" || env[name].trim() === ""
   );
-  return missing;
 }
 
 function metaVersion(env) {
@@ -161,22 +143,20 @@ function metaVersion(env) {
 
 function buildMetaAuthorizationUrl(env, state) {
   const url = new URL(
-    \`https://www.facebook.com/\${metaVersion(env)}/dialog/oauth\`
+    "https://www.facebook.com/" + metaVersion(env) + "/dialog/oauth"
   );
   url.searchParams.set("client_id", env.META_APP_ID);
   url.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
   url.searchParams.set("state", state);
   url.searchParams.set("response_type", "code");
-  // Facebook Login for Business configuration controls the requested
-  // business assets and permissions. Do not duplicate scopes here.
+  // The Login for Business configuration defines permissions and business assets.
   url.searchParams.set("config_id", env.META_LOGIN_CONFIG_ID);
   return url.toString();
 }
 
 async function getMetaAccessToken(env, code) {
-  const version = metaVersion(env);
   const endpoint = new URL(
-    \`https://graph.facebook.com/\${version}/oauth/access_token\`
+    "https://graph.facebook.com/" + metaVersion(env) + "/oauth/access_token"
   );
   endpoint.searchParams.set("client_id", env.META_APP_ID);
   endpoint.searchParams.set("client_secret", env.META_APP_SECRET);
@@ -190,24 +170,20 @@ async function getMetaAccessToken(env, code) {
   const result = await response.json().catch(() => ({}));
 
   if (!response.ok || typeof result.access_token !== "string") {
-    // Never return or log the upstream response; it may contain sensitive data.
     throw new Error("Meta token exchange failed");
   }
 
   return {
     accessToken: result.access_token,
-    expiresIn: Number.isFinite(Number(result.expires_in))
-      ? Number(result.expires_in)
-      : null,
-    tokenType: typeof result.token_type === "string"
-      ? result.token_type
-      : "bearer"
+    expiresIn: typeof result.expires_in === "number" &&
+      Number.isFinite(result.expires_in) ? result.expires_in : null,
+    tokenType: typeof result.token_type === "string" ? result.token_type : "bearer"
   };
 }
 
 async function getMetaIdentity(env, accessToken) {
   const endpoint = new URL(
-    \`https://graph.facebook.com/\${metaVersion(env)}/me\`
+    "https://graph.facebook.com/" + metaVersion(env) + "/me"
   );
   endpoint.searchParams.set("fields", "id,name");
   endpoint.searchParams.set("access_token", accessToken);
@@ -220,7 +196,6 @@ async function getMetaIdentity(env, accessToken) {
   if (!response.ok || typeof result.id !== "string") {
     throw new Error("Unable to verify Meta account identity");
   }
-
   return {
     id: result.id,
     name: typeof result.name === "string" ? result.name : null
@@ -245,7 +220,7 @@ async function encryptToken(env, token) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const key = await encryptionKey(env);
   const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
+    { name: "AES-GCM", iv: iv },
     key,
     new TextEncoder().encode(token)
   );
@@ -267,38 +242,29 @@ async function decryptToken(env, row) {
 
 async function ensureMetaTable(env) {
   await env.DB.prepare(
-    \`CREATE TABLE IF NOT EXISTS meta_connections (
-      user_id TEXT PRIMARY KEY,
-      meta_user_id TEXT NOT NULL,
-      meta_name TEXT,
-      token_ciphertext TEXT NOT NULL,
-      token_iv TEXT NOT NULL,
-      token_type TEXT NOT NULL DEFAULT 'bearer',
-      expires_at INTEGER,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    )\`
+    "CREATE TABLE IF NOT EXISTS meta_connections (user_id TEXT PRIMARY KEY, meta_user_id TEXT NOT NULL, meta_name TEXT, token_ciphertext TEXT NOT NULL, token_iv TEXT NOT NULL, token_type TEXT NOT NULL DEFAULT 'bearer', expires_at INTEGER, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)"
   ).run();
 }
 
-function callbackPage(title, message, success = false) {
-  const safeTitle = success ? "เชื่อมต่อ Meta สำเร็จ" : "เชื่อมต่อ Meta ไม่สำเร็จ";
-  const safeMessage = success
+function callbackPage(success) {
+  const title = success ? "เชื่อมต่อ Meta สำเร็จ" : "เชื่อมต่อ Meta ไม่สำเร็จ";
+  const message = success
     ? "บัญชีได้รับการเชื่อมต่อแล้ว คุณสามารถกลับไปยังแอป ADNEXA ได้"
     : "ไม่สามารถเชื่อมต่อบัญชีได้ กรุณากลับไปที่ ADNEXA แล้วลองใหม่อีกครั้ง";
-  return new Response(
-    \`<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>\${safeTitle}</title><body><main><h1>\${safeTitle}</h1><p>\${safeMessage}</p></main></body></html>\`,
-    {
-      status: success ? 200 : 400,
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "no-store",
-        "Referrer-Policy": "no-referrer",
-        "X-Content-Type-Options": "nosniff",
-        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"
-      }
+  const html = "<!doctype html><html lang=\"th\"><meta charset=\"utf-8\">" +
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+    "<title>" + title + "</title><body><main><h1>" + title +
+    "</h1><p>" + message + "</p></main></body></html>";
+  return new Response(html, {
+    status: success ? 200 : 400,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'"
     }
-  );
+  });
 }
 
 async function handleMetaStart(request, env) {
@@ -335,11 +301,10 @@ async function handleMetaCallback(url, env) {
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
 
-  if (!state) return callbackPage("", "", false);
-
+  if (!state) return callbackPage(false);
   const record = await consumeState(env, "meta", state);
-  if (!record) return callbackPage("", "", false);
-  if (error || !code) return callbackPage("", "", false);
+  if (!record) return callbackPage(false);
+  if (error || !code) return callbackPage(false);
 
   const missing = requiredEnv(env, [
     "META_APP_ID",
@@ -347,7 +312,7 @@ async function handleMetaCallback(url, env) {
     "META_REDIRECT_URI",
     "META_TOKEN_ENCRYPTION_KEY"
   ]);
-  if (missing.length) return callbackPage("", "", false);
+  if (missing.length) return callbackPage(false);
 
   const token = await getMetaAccessToken(env, code);
   const identity = await getMetaIdentity(env, token.accessToken);
@@ -360,18 +325,7 @@ async function handleMetaCallback(url, env) {
     : now + Math.max(0, token.expiresIn);
 
   await env.DB.prepare(
-    \`INSERT INTO meta_connections
-      (user_id, meta_user_id, meta_name, token_ciphertext, token_iv,
-       token_type, expires_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id) DO UPDATE SET
-       meta_user_id = excluded.meta_user_id,
-       meta_name = excluded.meta_name,
-       token_ciphertext = excluded.token_ciphertext,
-       token_iv = excluded.token_iv,
-       token_type = excluded.token_type,
-       expires_at = excluded.expires_at,
-       updated_at = excluded.updated_at\`
+    "INSERT INTO meta_connections (user_id, meta_user_id, meta_name, token_ciphertext, token_iv, token_type, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET meta_user_id = excluded.meta_user_id, meta_name = excluded.meta_name, token_ciphertext = excluded.token_ciphertext, token_iv = excluded.token_iv, token_type = excluded.token_type, expires_at = excluded.expires_at, updated_at = excluded.updated_at"
   ).bind(
     record.user_id,
     identity.id,
@@ -384,7 +338,7 @@ async function handleMetaCallback(url, env) {
     now
   ).run();
 
-  return callbackPage("", "", true);
+  return callbackPage(true);
 }
 
 async function getAuthenticatedMetaConnection(request, env) {
@@ -400,9 +354,7 @@ async function getAuthenticatedMetaConnection(request, env) {
     "SELECT * FROM meta_connections WHERE user_id = ? LIMIT 1"
   ).bind(userId).first();
 
-  if (!row) {
-    return { response: json({ connected: false, provider: "meta" }) };
-  }
+  if (!row) return { response: json({ connected: false, provider: "meta" }) };
 
   if (row.expires_at !== null && row.expires_at <= Math.floor(Date.now() / 1000)) {
     return {
@@ -413,8 +365,7 @@ async function getAuthenticatedMetaConnection(request, env) {
       })
     };
   }
-
-  return { userId, row };
+  return { userId: userId, row: row };
 }
 
 async function handleMetaConnection(request, env) {
@@ -423,32 +374,26 @@ async function handleMetaConnection(request, env) {
   return json({
     connected: true,
     provider: "meta",
-    account: {
-      id: result.row.meta_user_id,
-      name: result.row.meta_name
-    },
+    account: { id: result.row.meta_user_id, name: result.row.meta_name },
     expires_at: result.row.expires_at
   });
 }
 
 async function handleMetaAdAccounts(request, env) {
-  const result = await getAuthenticatedMetaConnection(request, env);
-  if (result.response) return result.response;
+  const connection = await getAuthenticatedMetaConnection(request, env);
+  if (connection.response) return connection.response;
 
   let accessToken;
   try {
-    accessToken = await decryptToken(env, result.row);
+    accessToken = await decryptToken(env, connection.row);
   } catch {
     return json({ error: "Stored Meta credential unavailable" }, 503);
   }
 
   const endpoint = new URL(
-    \`https://graph.facebook.com/\${metaVersion(env)}/me/adaccounts\`
+    "https://graph.facebook.com/" + metaVersion(env) + "/me/adaccounts"
   );
-  endpoint.searchParams.set(
-    "fields",
-    "id,name,account_status,currency,timezone_name"
-  );
+  endpoint.searchParams.set("fields", "id,name,account_status,currency,timezone_name");
   endpoint.searchParams.set("limit", "100");
   endpoint.searchParams.set("access_token", accessToken);
 
@@ -486,9 +431,8 @@ async function handleMetaDisconnect(request, env) {
   }
 
   await ensureMetaTable(env);
-  await env.DB.prepare(
-    "DELETE FROM meta_connections WHERE user_id = ?"
-  ).bind(userId).run();
+  await env.DB.prepare("DELETE FROM meta_connections WHERE user_id = ?")
+    .bind(userId).run();
 
   return json({ status: "disconnected", provider: "meta" });
 }
@@ -534,8 +478,7 @@ export default {
         }
       }
 
-      const metaStartMatch = path === "/api/oauth/meta/start";
-      if (method === "POST" && metaStartMatch) {
+      if (method === "POST" && path === "/api/oauth/meta/start") {
         return await handleMetaStart(request, env);
       }
 
@@ -555,8 +498,7 @@ export default {
         return await handleMetaDisconnect(request, env);
       }
 
-      // Keep the existing TikTok state/callback behavior unchanged until
-      // its provider-specific OAuth configuration is implemented.
+      // Keep TikTok's existing state-only placeholder unchanged for now.
       const startMatch = path.match(/^\/api\/oauth\/(tiktok)\/start$/);
       if (method === "POST" && startMatch) {
         let userId;
@@ -569,7 +511,7 @@ export default {
         return json({
           status: "state_created",
           provider: "tiktok",
-          state,
+          state: state,
           expires_in: STATE_TTL
         });
       }
@@ -583,7 +525,9 @@ export default {
         if (!record) {
           return json({ error: "Invalid, expired, or already used state" }, 400);
         }
-        if (error) return json({ provider: "tiktok", status: "authorization_denied" }, 400);
+        if (error) {
+          return json({ provider: "tiktok", status: "authorization_denied" }, 400);
+        }
         if (!code) return json({ error: "Missing authorization code" }, 400);
         return json({
           provider: "tiktok",
