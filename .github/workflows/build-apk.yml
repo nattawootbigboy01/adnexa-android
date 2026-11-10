@@ -47,7 +47,7 @@ jobs:
           from pathlib import Path
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
-          s = s.replace('android:label="adnexa"', 'android:label="ADNEXA ยิงแอด"')
+          s = s.replace('android:label="adnexa"', 'android:label="ADNEXA ADS"')
           s = s.replace('android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/ic_adnexa"')
           p.write_text(s)
           PY
