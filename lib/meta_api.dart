@@ -101,6 +101,29 @@ class MetaApi {
         '&date_preset=${Uri.encodeQueryComponent(datePreset)}',
       );
 
+  static Future<Map<String, dynamic>> adminOverview() =>
+      _request('/api/admin/overview');
+
+  static Future<List<Map<String, dynamic>>> adminConnections() async {
+    final data = await _request('/api/admin/connections');
+    final items = data['connections'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
+  }
+
+  static Future<List<Map<String, dynamic>>> adminAudit() async {
+    final data = await _request('/api/admin/audit');
+    final items = data['events'];
+    if (items is! List) return const [];
+    return items
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
+  }
+
   static Future<void> disconnect() async {
     await _request('/api/meta/connection', method: 'DELETE');
   }
