@@ -36,12 +36,11 @@ jobs:
               android:height="108dp"
               android:viewportWidth="108"
               android:viewportHeight="108">
-              <path android:fillColor="#090A10" android:pathData="M0,0h108v108h-108z"/>
-              <path android:fillColor="#A88BFF" android:pathData="M18,43 L58,29 L58,73 L18,59 Z"/>
-              <path android:fillColor="#E8E8F2" android:pathData="M58,36 L78,22 L78,80 L58,66 Z"/>
-              <path android:fillColor="#B99BFF" android:pathData="M28,62 L38,86 L51,86 L42,57 Z"/>
-              <path android:fillColor="#FFFFFF" android:pathData="M65,18 L72,18 L72,11 L91,11 L91,30 L84,30 L84,23 L73,34 L68,29 L79,18 Z"/>
-              <path android:fillColor="#9270FF" android:pathData="M66,48 L74,40 L82,48 L89,41 L94,46 L82,59 L74,51 L66,59 Z"/>
+              <path android:fillColor="#080B10" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#DDE5EF" android:pathData="M15,82 L42,22 Q45,16 50,22 L77,82 L63,82 L46,43 L29,82 Z"/>
+              <path android:fillColor="#9EADBF" android:pathData="M42,66 L51,48 L59,66 Z"/>
+              <path android:fillColor="#258BFF" android:pathData="M55,69 L70,54 L78,61 L96,39 L96,57 L78,77 L70,69 L61,79 Z"/>
+              <path android:fillColor="#258BFF" android:pathData="M81,26 L97,26 L97,42 L90,42 L90,33 L81,33 Z"/>
           </vector>
           EOF
           python3 - <<'PY'
