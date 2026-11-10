@@ -42,7 +42,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int index = 0;
   bool _isAdmin = false;
-  bool _roleChecked = false;
 
   @override
   void initState() {
@@ -58,10 +57,9 @@ class _AppShellState extends State<AppShell> {
       if (!mounted) return;
       setState(() {
         _isAdmin = customClaims['admin'] == true || customClaims['role'] == 'admin';
-        _roleChecked = true;
       });
     } catch (_) {
-      if (mounted) setState(() => _roleChecked = true);
+      // Keep customer-only navigation when claims cannot be verified.
     }
   }
 
@@ -1300,22 +1298,14 @@ class _AdminPageState extends State<AdminPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final results = await Future.wait([
-        MetaApi.adminOverview(),
-        MetaApi.adminConnections(),
-        MetaApi.adminAudit(),
-      ]);
+      final overview = await MetaApi.adminOverview();
+      final connections = await MetaApi.adminConnections();
+      final events = await MetaApi.adminAudit();
       if (!mounted) return;
       setState(() {
-        _overview = results[0];
-        _connections = (results[1]['connections'] is List)
-            ? (results[1]['connections'] as List).whereType<Map>()
-                .map((item) => Map<String, dynamic>.from(item)).toList()
-            : const [];
-        _events = (results[2]['events'] is List)
-            ? (results[2]['events'] as List).whereType<Map>()
-                .map((item) => Map<String, dynamic>.from(item)).toList()
-            : const [];
+        _overview = overview;
+        _connections = connections;
+        _events = events;
       });
     } catch (error) {
       if (!mounted) return;
