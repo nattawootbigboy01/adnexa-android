@@ -15,7 +15,7 @@ Add these Worker secrets/variables in Cloudflare Dashboard â†’ Workers & Pages â
 | `META_APP_ID` | Variable | Meta app ID |
 | `META_LOGIN_CONFIG_ID` | Variable | Facebook Login for Business configuration ID |
 | `META_REDIRECT_URI` | Variable | `https://adnexa-api.nattawootbigboy01.workers.dev/api/meta/callback` |
-| `META_GRAPH_API_VERSION` | Variable | `v25.0` (confirm supported version in Meta dashboard before production) |
+| `META_GRAPH_API_VERSION` | Variable | `v27.0` (current version announced by Meta; verify support in the app's dashboard before production) |
 | `META_APP_SECRET` | Secret | Meta app secret |
 | `META_TOKEN_ENCRYPTION_KEY` | Secret | Base64 encoding of exactly 32 cryptographically random bytes |
 
