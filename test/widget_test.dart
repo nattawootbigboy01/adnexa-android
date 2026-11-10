@@ -24,6 +24,14 @@ void main() {
     await tester.tap(find.text('ทำเองทั้งหมด'));
     await tester.pumpAndSettle();
 
+    // CampaignPage uses a lazy ListView; scroll the age control into the tree.
+    await tester.scrollUntilVisible(
+      find.byType(RangeSlider),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
     expect(slider.min, 18);
     expect(slider.max, 60);
