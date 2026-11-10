@@ -214,9 +214,16 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(top: 22, bottom: 11),
     child: Row(children: [
-      Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-      const Spacer(),
-      if (action != null) Text(action!, style: const TextStyle(color: violet, fontSize: 11)),
+      Expanded(child: Text(
+        title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+      )),
+      if (action != null) ...[
+        const SizedBox(width: 8),
+        Text(action!, style: const TextStyle(color: violet, fontSize: 11)),
+      ],
     ]),
   );
 }
