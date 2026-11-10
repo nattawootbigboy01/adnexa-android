@@ -242,8 +242,7 @@ class _CampaignPageState extends State<CampaignPage> {
   String platform = 'Meta Ads';
   String objective = 'Traffic';
   String campaignMode = 'AI';
-  final ageStart = TextEditingController(text: '1');
-  final ageEnd = TextEditingController(text: '60');
+  RangeValues ageRange = const RangeValues(18, 60);
   String? aiAgeSuggestion;
   String manualGender = 'ทุกเพศ';
   int durationDays = 7;
@@ -331,15 +330,60 @@ class _CampaignPageState extends State<CampaignPage> {
       audience = 'ผู้ที่สนใจสินค้า/บริการประเภทนี้และลูกค้าในพื้นที่ให้บริการ';
       creative = 'ภาพหรือวิดีโอแสดงประโยชน์ จุดเด่น ราคา และหลักฐานความน่าเชื่อถือ';
     }
-    final suggestedAge = (lower.contains('เด็ก') || lower.contains('ของเล่น') || lower.contains('baby')) ? '1–17 ปี' : (lower.contains('ผู้สูงอายุ') || lower.contains('สุขภาพวัยเกษียณ')) ? '45–60 ปี' : (lower.contains('วัยรุ่น') || lower.contains('นักศึกษา')) ? '15–25 ปี' : '18–44 ปี';
+    final suggestedAge = (lower.contains('เด็ก') || lower.contains('ของเล่น') || lower.contains('baby')) ? '25–44 ปี (ผู้ใหญ่/ผู้ปกครอง)' : (lower.contains('ผู้สูงอายุ') || lower.contains('สุขภาพวัยเกษียณ')) ? '45–60 ปี' : (lower.contains('วัยรุ่น') || lower.contains('นักศึกษา')) ? '18–25 ปี' : '18–44 ปี';
     setState(() {
       aiAgeSuggestion = suggestedAge;
       aiPlan = 'กลุ่มเป้าหมายแนะนำ: ' + audience + '\nพื้นที่เป้าหมาย: ประเทศไทยทั้งประเทศ\nช่วงอายุที่ AI แนะนำ: ' + suggestedAge + '\nชิ้นงานแนะนำ: ' + creative + '\nเป้าหมาย: ' + (objectiveLabels[objective] ?? objective) + '\n\nคำแนะนำนี้มาจากตัวช่วยภายในแอปแบบออฟไลน์ ยังไม่ใช่ AI ออนไลน์ ต้องตรวจทานก่อนใช้';
     });
   }
 
+
+  void _showPublishReview() {
+    final amount = double.tryParse(budget.text.trim());
+    if (name.text.trim().isEmpty || amount == null || amount <= 0) {
+      notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
+      return;
+    }
+    if (campaignMode == 'AI' && aiPlan == null) {
+      notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนตรวจสอบ');
+      return;
+    }
+    if (campaignMode == 'Manual' && manualAudience.text.trim().isEmpty) {
+      notice(context, 'กรุณาระบุกลุ่มลูกค้าในโหมดทำเอง');
+      return;
+    }
+    final startAge = ageRange.start.round();
+    final endAge = ageRange.end.round();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('ตรวจสอบแคมเปญก่อนเผยแพร่'),
+        content: SingleChildScrollView(child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('แพลตฟอร์ม: $platform'),
+            Text('วัตถุประสงค์: ${objectiveLabels[objective] ?? objective}'),
+            Text('ช่วงอายุ: $startAge–$endAge ปี'),
+            Text('งบประมาณ: ฿${amount.toStringAsFixed(0)} ต่อวัน'),
+            Text('ระยะเวลา: $durationDays วัน'),
+            Text('งบรวม: ฿${(amount * durationDays).toStringAsFixed(0)}'),
+            const Divider(height: 24),
+            const Text('สถานะ: ยังไม่พร้อมเผยแพร่จริง', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFFFC078))),
+            const SizedBox(height: 6),
+            const Text('ต้องเชื่อมบัญชีโฆษณาผ่าน OAuth ทางการและตั้งค่า API ฝั่งเซิร์ฟเวอร์ก่อน ปัจจุบันบัญชีแพลตฟอร์มยังไม่เชื่อมต่อ จึงยังไม่มีการส่งโฆษณาหรือใช้เงินจริง', style: TextStyle(fontSize: 12, height: 1.45)),
+          ],
+        )),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('กลับไปแก้ไข')),
+          FilledButton(onPressed: null, child: const Text('รอเชื่อมต่อบัญชี')),
+        ],
+      ),
+    );
+  }
+
   @override
-  void dispose() { name.dispose(); budget.dispose(); productInfo.dispose(); manualAudience.dispose(); manualInterests.dispose(); ageStart.dispose(); ageEnd.dispose(); super.dispose(); }
+  void dispose() { name.dispose(); budget.dispose(); productInfo.dispose(); manualAudience.dispose(); manualInterests.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) => PageBody(children: [
@@ -387,20 +431,42 @@ class _CampaignPageState extends State<CampaignPage> {
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
     ],
     const SectionTitle('ช่วงอายุเป้าหมาย'),
-    const Text('กำหนดอายุได้ตั้งแต่ 1–60 ปี และปรับเองได้ทั้งโหมด AI และโหมดทำเอง', style: TextStyle(color: muted, fontSize: 10)),
+    const Text('เลือกกลุ่มผู้ชมได้ตั้งแต่อายุ 18–60 ปี ปรับช่วงอายุได้เองทั้งโหมด AI และโหมดทำเอง', style: TextStyle(color: muted, fontSize: 10)),
     const SizedBox(height: 7),
-    Row(children: [
-      Expanded(child: TextField(controller: ageStart, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'อายุเริ่มต้น', suffixText: 'ปี'))),
-      const SizedBox(width: 10),
-      Expanded(child: TextField(controller: ageEnd, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'อายุสิ้นสุด', suffixText: 'ปี'))),
-    ]),
+    CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('อายุเริ่มต้น', style: TextStyle(color: muted, fontSize: 10)),
+          Text('${ageRange.start.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+        ])),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          const Text('อายุสิ้นสุด', style: TextStyle(color: muted, fontSize: 10)),
+          Text('${ageRange.end.round()} ปี', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFFBCA9FF))),
+        ])),
+      ]),
+      RangeSlider(
+        values: ageRange,
+        min: 18,
+        max: 60,
+        divisions: 42,
+        labels: RangeLabels('${ageRange.start.round()} ปี', '${ageRange.end.round()} ปี'),
+        onChanged: (values) => setState(() => ageRange = values),
+      ),
+      const Text('เลื่อนจุดทั้งสองด้านเพื่อกำหนดช่วงอายุ ระบบจะไม่อนุญาตให้อายุต่ำกว่า 18 ปีหรือเกิน 60 ปี', style: TextStyle(color: muted, fontSize: 10, height: 1.4)),
+    ])),
     if (campaignMode == 'AI' && aiAgeSuggestion != null) ...[
       const SizedBox(height: 8),
       CardPanel(child: Row(children: [
         const Expanded(child: Text('คำแนะนำช่วงอายุจาก AI', style: TextStyle(fontSize: 11, color: muted))),
         Text(aiAgeSuggestion!, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFBCA9FF))),
         const SizedBox(width: 8),
-        TextButton(onPressed: () { final parts = aiAgeSuggestion!.replaceAll(' ปี', '').split('–'); setState(() { ageStart.text = parts[0]; ageEnd.text = parts[1]; }); }, child: const Text('ใช้ค่านี้')),
+        TextButton(onPressed: () {
+          final match = RegExp(r'(\d+)\s*[–-]\s*(\d+)').firstMatch(aiAgeSuggestion!);
+          if (match == null) return;
+          final suggestedStart = int.parse(match.group(1)!);
+          final suggestedEnd = int.parse(match.group(2)!);
+          setState(() => ageRange = RangeValues(suggestedStart.toDouble(), suggestedEnd.toDouble()));
+        }, child: const Text('ใช้ค่านี้')),
       ])),
     ],
     const Text('งบประมาณต่อวัน (บาท)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
@@ -425,6 +491,12 @@ class _CampaignPageState extends State<CampaignPage> {
       const Text('ตัวเลขจำลองจากสมมติฐาน CPM ฿30–฿100 และความถี่ 1.2–2 ครั้งต่อคน ยังไม่ใช่ข้อมูลประมาณการจากแพลตฟอร์มโฆษณาจริง ไม่รับประกันผลลัพธ์ และจะต้องเชื่อมต่อ API ของแพลตฟอร์มก่อนจึงจะแสดงค่าจริงได้', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
     ])),
     const SizedBox(height: 18),
+    SizedBox(width: double.infinity, child: OutlinedButton.icon(
+      onPressed: _showPublishReview,
+      icon: const Icon(Icons.fact_check_outlined),
+      label: const Text('ตรวจสอบก่อนเผยแพร่'),
+    )),
+    const SizedBox(height: 9),
     SizedBox(width: double.infinity, child: FilledButton.icon(
       onPressed: () {
         final amount = double.tryParse(budget.text);
@@ -432,9 +504,9 @@ class _CampaignPageState extends State<CampaignPage> {
           notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
           return;
         }
-        final startAge = int.tryParse(ageStart.text.trim());
-        final endAge = int.tryParse(ageEnd.text.trim());
-        if (startAge == null || endAge == null || startAge < 1 || startAge > 60 || endAge < 1 || endAge > 60 || startAge > endAge) { notice(context, 'กรุณากำหนดช่วงอายุ 1–60 ปี โดยอายุเริ่มต้นต้องไม่มากกว่าอายุสิ้นสุด'); return; }
+        final startAge = ageRange.start.round();
+        final endAge = ageRange.end.round();
+        if (startAge < 18 || endAge > 60 || startAge > endAge) { notice(context, 'กรุณากำหนดช่วงอายุ 18–60 ปีให้ถูกต้อง'); return; }
         if (campaignMode == 'AI' && aiPlan == null) { notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนบันทึก'); return; }
         if (campaignMode == 'Manual' && manualAudience.text.trim().isEmpty) { notice(context, 'กรุณาระบุกลุ่มลูกค้าในโหมดทำเอง'); return; }
         final targeting = campaignMode == 'AI' ? 'AI PLAN: ' + (aiPlan ?? '') + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี' : 'MANUAL: พื้นที่ประเทศไทย, กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี, เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
