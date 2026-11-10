@@ -557,7 +557,7 @@ export default {
 
       // Keep the existing TikTok state/callback behavior unchanged until
       // its provider-specific OAuth configuration is implemented.
-      const startMatch = path.match(/^\\/api\\/oauth\\/(tiktok)\\/start$/);
+      const startMatch = path.match(/^\/api\/oauth\/(tiktok)\/start$/);
       if (method === "POST" && startMatch) {
         let userId;
         try {
