@@ -44,6 +44,9 @@ All endpoints except the OAuth callback and health endpoints require a Firebase 
 - `GET /api/meta/ad-accounts` — read-only list of up to 100 ad accounts per request. If `has_more` is true and `next_cursor` is present, request the next page with `?after=<URL-encoded next_cursor>`. The Worker accepts only the opaque cursor (not a caller-supplied URL) and returns the same account fields for each page.
 - `GET /api/meta/insights?ad_account_id=<numeric-id>&date_preset=last_7d` — read-only account-level performance summary. Supported presets: `yesterday`, `last_7d`, `last_14d`, `last_30d`, `last_90d`, `this_month`, and `last_month`. Returns spend, impressions, reach, clicks, CTR, CPC, CPM, frequency, currency, and reporting dates. Requires the connected user to have the necessary approved read permission (normally `ads_read`).
 - `DELETE /api/meta/connection` — removes the locally stored encrypted token.
+- `GET /api/admin/overview` — administrator-only, read-only connection counts. Requires a verified Firebase custom claim `admin: true` or `role: "admin"`.
+- `GET /api/admin/connections` — administrator-only list of Meta connection metadata (UID and Meta account identity only; no tokens).
+- `GET /api/admin/audit` — administrator-only recent admin access events. These routes do not grant admin roles; claims must be assigned through a trusted Firebase Admin SDK environment. The current admin console is read-only and does not manage users, roles, campaigns, or ad spend.
 
 The Flutter app must open the returned `authorization_url` in the system browser, then poll `GET /api/meta/connection` after the callback. Access tokens are never returned to the app.
 
