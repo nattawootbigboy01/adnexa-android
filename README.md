@@ -29,7 +29,7 @@ Never place Firebase credentials, Meta app secrets, encryption keys, access toke
 4. Wait for dependency installation, `flutter analyze`, `flutter test`, and the release APK build to complete.
 5. Download the `adnexa-android-apk` artifact from a successful run.
 
-The workflow also runs on pushes to this feature branch. It does not deploy the Cloudflare Worker or publish an app.
+The workflow runs only when manually dispatched from GitHub Actions. It does not deploy the Cloudflare Worker or publish an app.
 
 GitHub Actions usage is subject to the account's included minutes and storage quota. No paid service or payment method is configured by this project.
 
