@@ -927,24 +927,208 @@ class _AiPageState extends State<AiPage> {
   ]);
 }
 
-class AnalyticsPage extends StatelessWidget {
+class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
   @override
-  Widget build(BuildContext context) => PageBody(children: [
-    const Text('Campaign performance overview', style: TextStyle(color: muted, fontSize: 12)),
-    const SectionTitle('Key metrics'),
-    const MetricCard(label: 'Reach', value: '28,640', delta: 'Demo metric', icon: Icons.groups_outlined),
-    const SizedBox(height: 9),
-    const Row(children: [
-      Expanded(child: MetricCard(label: 'CTR', value: '2.98%', delta: 'Demo metric', icon: Icons.ads_click)),
-      SizedBox(width: 9),
-      Expanded(child: MetricCard(label: 'Conversions', value: '146', delta: 'Demo metric', icon: Icons.shopping_bag_outlined)),
-    ]),
-    const SizedBox(height: 9),
-    const MetricCard(label: 'ROAS', value: '3.42x', delta: 'Demo metric', icon: Icons.trending_up),
-    const SectionTitle('Reporting'),
-    const EmptyState(text: 'รายงานจริงจะแสดงเมื่อเชื่อมต่อแพลตฟอร์มโฆษณา'),
-  ]);
+  State<AnalyticsPage> createState() => _AnalyticsPageState();
+}
+
+class _AnalyticsPageState extends State<AnalyticsPage> {
+  static const _ranges = <String, String>{
+    'last_7d': '7 วันที่ผ่านมา',
+    'last_14d': '14 วันที่ผ่านมา',
+    'last_30d': '30 วันที่ผ่านมา',
+    'last_90d': '90 วันที่ผ่านมา',
+    'this_month': 'เดือนนี้',
+    'last_month': 'เดือนที่แล้ว',
+    'yesterday': 'เมื่อวาน',
+  };
+
+  List<Map<String, dynamic>> _accounts = const [];
+  String? _selectedAccountId;
+  String _datePreset = 'last_7d';
+  Map<String, dynamic>? _insights;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  String _number(dynamic value, {int decimals = 0}) {
+    final parsed = num.tryParse(value?.toString() ?? '');
+    if (parsed == null) return '—';
+    if (decimals == 0) return parsed.round().toString();
+    return parsed.toStringAsFixed(decimals);
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final accounts = await MetaApi.adAccounts();
+      if (accounts.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _accounts = const [];
+          _selectedAccountId = null;
+          _insights = null;
+          _error = 'ยังไม่พบบัญชีโฆษณา Meta ที่เข้าถึงได้';
+        });
+        return;
+      }
+
+      final availableIds = accounts
+          .map((item) => item['id']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toSet();
+      var selected = _selectedAccountId;
+      if (selected == null || !availableIds.contains(selected)) {
+        selected = accounts.first['id']?.toString();
+      }
+      if (selected == null || selected.isEmpty) {
+        throw Exception('ไม่พบรหัสบัญชีโฆษณา');
+      }
+
+      final result = await MetaApi.insights(
+        selected,
+        datePreset: _datePreset,
+      );
+      if (!mounted) return;
+      setState(() {
+        _accounts = accounts;
+        _selectedAccountId = selected;
+        final value = result['insights'];
+        _insights = value is Map
+            ? Map<String, dynamic>.from(value)
+            : null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _insights = null;
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Widget _metric(String label, String value, IconData icon) => MetricCard(
+    label: label,
+    value: value,
+    delta: 'ข้อมูลจาก Meta Ads',
+    icon: icon,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = _insights?['account_currency']?.toString() ?? '';
+    final spend = _number(_insights?['spend'], decimals: 2);
+    final dateStart = _insights?['date_start']?.toString();
+    final dateStop = _insights?['date_stop']?.toString();
+
+    return PageBody(children: [
+      const Text(
+        'ผลการโฆษณาจริงจากบัญชี Meta ที่เชื่อมต่อ (Read-only)',
+        style: TextStyle(color: muted, fontSize: 12),
+      ),
+      const SectionTitle('ตัวกรองรายงาน'),
+      DropdownButtonFormField<String>(
+        value: _accounts.any((a) => a['id']?.toString() == _selectedAccountId)
+            ? _selectedAccountId
+            : null,
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'บัญชีโฆษณา'),
+        items: _accounts.map((account) {
+          final id = account['id']?.toString() ?? '';
+          final name = account['name']?.toString() ?? id;
+          return DropdownMenuItem<String>(
+            value: id,
+            child: Text(name, overflow: TextOverflow.ellipsis),
+          );
+        }).toList(),
+        onChanged: _loading ? null : (value) {
+          if (value == null) return;
+          setState(() => _selectedAccountId = value);
+          _load();
+        },
+      ),
+      const SizedBox(height: 10),
+      DropdownButtonFormField<String>(
+        value: _datePreset,
+        decoration: const InputDecoration(labelText: 'ช่วงเวลา'),
+        items: _ranges.entries.map((entry) => DropdownMenuItem(
+          value: entry.key,
+          child: Text(entry.value),
+        )).toList(),
+        onChanged: _loading ? null : (value) {
+          if (value == null) return;
+          setState(() => _datePreset = value);
+          _load();
+        },
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: _loading ? null : _load,
+          icon: const Icon(Icons.refresh),
+          label: const Text('รีเฟรชข้อมูล'),
+        ),
+      ),
+      if (_loading) ...[
+        const SizedBox(height: 12),
+        const LinearProgressIndicator(minHeight: 2),
+        const SizedBox(height: 8),
+        const Text('กำลังอ่านข้อมูลจาก Meta…', style: TextStyle(color: muted, fontSize: 11)),
+      ],
+      if (_error != null) ...[
+        const SizedBox(height: 12),
+        CardPanel(child: Text(
+          _error!,
+          style: const TextStyle(color: Color(0xFFFFA0A0), fontSize: 12),
+        )),
+      ],
+      if (_insights != null) ...[
+        const SectionTitle('ผลการโฆษณา'),
+        if (dateStart != null && dateStop != null)
+          Text('ช่วงข้อมูล: $dateStart ถึง $dateStop',
+            style: const TextStyle(color: muted, fontSize: 10)),
+        const SizedBox(height: 9),
+        _metric('ยอดใช้จ่าย', '$spend $currency', Icons.payments_outlined),
+        const SizedBox(height: 9),
+        Row(children: [
+          Expanded(child: _metric('การเข้าถึง', _number(_insights?['reach']), Icons.groups_outlined)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('การแสดงผล', _number(_insights?['impressions']), Icons.visibility_outlined)),
+        ]),
+        const SizedBox(height: 9),
+        Row(children: [
+          Expanded(child: _metric('คลิกทั้งหมด', _number(_insights?['clicks']), Icons.ads_click)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('CTR', '${_number(_insights?['ctr'], decimals: 2)}%', Icons.trending_up)),
+        ]),
+        const SizedBox(height: 9),
+        Row(children: [
+          Expanded(child: _metric('CPC', '${_number(_insights?['cpc'], decimals: 2)} $currency', Icons.touch_app_outlined)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('CPM', '${_number(_insights?['cpm'], decimals: 2)} $currency', Icons.bar_chart)),
+        ]),
+        const SizedBox(height: 9),
+        _metric('ความถี่เฉลี่ย', _number(_insights?['frequency'], decimals: 2), Icons.repeat),
+      ],
+      const SizedBox(height: 10),
+      const Text(
+        'หมายเหตุ: รายงานนี้ดึงข้อมูลแบบอ่านอย่างเดียวจาก Meta Marketing API ตัวเลขอาจล่าช้าตามการประมวลผลและเขตเวลาของบัญชีโฆษณา ไม่มีการสร้าง แก้ไข หรือเผยแพร่โฆษณา',
+        style: TextStyle(color: muted, fontSize: 10, height: 1.5),
+      ),
+    ]);
+  }
 }
 
 class CardPanel extends StatelessWidget {
