@@ -92,6 +92,15 @@ class MetaApi {
         .toList(growable: false);
   }
 
+  static Future<Map<String, dynamic>> insights(
+    String accountId, {
+    String datePreset = 'last_7d',
+  }) =>
+      _request(
+        '/api/meta/insights?ad_account_id=${Uri.encodeQueryComponent(accountId)}'
+        '&date_preset=${Uri.encodeQueryComponent(datePreset)}',
+      );
+
   static Future<void> disconnect() async {
     await _request('/api/meta/connection', method: 'DELETE');
   }
