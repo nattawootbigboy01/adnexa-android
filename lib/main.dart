@@ -515,7 +515,7 @@ class _CampaignPageState extends State<CampaignPage> {
             const Divider(height: 24),
             const Text('สถานะ: ยังไม่พร้อมเผยแพร่จริง', style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFFFC078))),
             const SizedBox(height: 6),
-            const Text('ต้องเชื่อมบัญชีโฆษณาผ่าน OAuth ทางการและตั้งค่า API ฝั่งเซิร์ฟเวอร์ก่อน ปัจจุบันบัญชีแพลตฟอร์มยังไม่เชื่อมต่อ จึงยังไม่มีการส่งโฆษณาหรือใช้เงินจริง', style: TextStyle(fontSize: 12, height: 1.45)),
+            const Text('รุ่นนี้ยังไม่มี API สำหรับสร้างหรือเผยแพร่แคมเปญ แม้เชื่อมบัญชี Meta แล้วก็จะบันทึกได้เฉพาะ Draft ไม่มีการส่งคำสั่งหรือใช้เงินจริง', style: TextStyle(fontSize: 12, height: 1.45)),
           ],
         )),
         actions: [
@@ -543,7 +543,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(value: platform, items: const [DropdownMenuItem(value: 'Meta Ads', child: Text('Meta Ads'))], onChanged: (v) => setState(() => platform = v!)),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
