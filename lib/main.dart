@@ -16,7 +16,7 @@ class AdnexaApp extends StatelessWidget {
   const AdnexaApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'ADNEXA',
+    title: 'ADNEXA Ads',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -41,55 +41,125 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), AnalyticsPage()];
-  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'ADNEXA AI', 'Analytics'];
+  bool _isAdmin = false;
+  bool _roleChecked = false;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: SafeArea(child: Column(children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-        child: Row(children: [
-          Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(colors: [Color(0xFFB9A6FF), violet, Color(0xFF5634B8)]),
-              boxShadow: [BoxShadow(color: violet.withOpacity(.28), blurRadius: 18)],
+  void initState() {
+    super.initState();
+    _checkAdminRole();
+  }
+
+  Future<void> _checkAdminRole() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final claims = await user?.getIdTokenResult(true);
+      final customClaims = claims?.claims ?? const <String, dynamic>{};
+      if (!mounted) return;
+      setState(() {
+        _isAdmin = customClaims['admin'] == true || customClaims['role'] == 'admin';
+        _roleChecked = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _roleChecked = true);
+    }
+  }
+
+  List<Widget> get _pages => [
+    const DashboardPage(),
+    const CampaignPage(),
+    const AccountsPage(),
+    const AiPage(),
+    const AnalyticsPage(),
+    if (_isAdmin) const AdminPage(),
+  ];
+
+  List<String> get _titles => [
+    'ภาพรวม', 'แคมเปญ', 'บัญชีโฆษณา', 'AI Planner', 'Insights',
+    if (_isAdmin) 'ศูนย์ผู้ดูแล',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = _pages;
+    final destinations = <NavigationDestination>[
+      const NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'หน้าหลัก'),
+      const NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'แคมเปญ'),
+      const NavigationDestination(icon: Icon(Icons.link_rounded), label: 'บัญชี'),
+      const NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
+      const NavigationDestination(icon: Icon(Icons.query_stats), label: 'Insights'),
+      if (_isAdmin)
+        const NavigationDestination(icon: Icon(Icons.admin_panel_settings_outlined), label: 'Admin'),
+    ];
+    if (index >= pages.length) index = 0;
+
+    return Scaffold(
+      body: SafeArea(child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 12, 14, 10),
+          child: Row(children: [
+            const BrandMark(size: 42),
+            const SizedBox(width: 11),
+            const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('ADNEXA ADS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.7)),
+              Text('ADVERTISING INTELLIGENCE', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.3)),
+            ]),
+            const Spacer(),
+            IconButton(
+              tooltip: 'รีเฟรชสิทธิ์ผู้ดูแล',
+              onPressed: _checkAdminRole,
+              icon: const Icon(Icons.sync_rounded),
             ),
-            child: const Icon(Icons.bolt_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 11),
-          const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('ADNEXA', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
-            Text('ADVERTISING INTELLIGENCE', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.4)),
+            IconButton(
+              tooltip: 'ออกจากระบบ',
+              onPressed: () async { await FirebaseAuth.instance.signOut(); },
+              icon: const Icon(Icons.logout_rounded),
+            ),
           ]),
-          const Spacer(),
-          IconButton(onPressed: () => notice(context, 'ระบบแจ้งเตือนจะเปิดใช้เมื่อเชื่อมต่อ Backend'), icon: const Icon(Icons.notifications_none_rounded)),
-          IconButton(tooltip: 'ออกจากระบบ', onPressed: () async { await FirebaseAuth.instance.signOut(); }, icon: const Icon(Icons.logout_rounded)),
-          const CircleAvatar(radius: 17, backgroundColor: Color(0xFF29243C), child: Icon(Icons.person_outline, size: 19, color: Color(0xFFC7B8FF))),
-        ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(children: [
+            Expanded(child: Text(_titles[index],
+              style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800))),
+            if (_isAdmin && index == pages.length - 1)
+              const Chip(avatar: Icon(Icons.verified_user, size: 14), label: Text('ADMIN')),
+          ]),
+        ),
+        const SizedBox(height: 10),
+        Expanded(child: IndexedStack(index: index, children: pages)),
+      ])),
+      bottomNavigationBar: NavigationBar(
+        backgroundColor: const Color(0xFF10121A),
+        indicatorColor: violet.withOpacity(.18),
+        selectedIndex: index,
+        onDestinationSelected: (value) => setState(() => index = value),
+        destinations: destinations,
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Align(alignment: Alignment.centerLeft, child: Text(titles[index], style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800))),
+    );
+  }
+}
+
+class BrandMark extends StatelessWidget {
+  final double size;
+  const BrandMark({super.key, this.size = 40});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(size * .29),
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFFE1D9FF), Color(0xFF9270FF), Color(0xFF4D35A8)],
       ),
-      const SizedBox(height: 12),
-      Expanded(child: IndexedStack(index: index, children: pages)),
-    ])),
-    bottomNavigationBar: NavigationBar(
-      backgroundColor: const Color(0xFF10121A),
-      indicatorColor: violet.withOpacity(.2),
-      selectedIndex: index,
-      onDestinationSelected: (v) => setState(() => index = v),
-      destinations: const [
-        NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'Campaigns'),
-        NavigationDestination(icon: Icon(Icons.link_rounded), label: 'Accounts'),
-        NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
-        NavigationDestination(icon: Icon(Icons.query_stats), label: 'Insights'),
+      boxShadow: [
+        BoxShadow(color: violet.withOpacity(.25), blurRadius: 18, offset: const Offset(0, 5)),
       ],
     ),
+    child: Icon(Icons.auto_graph_rounded, color: Colors.white, size: size * .58),
   );
 }
 
@@ -103,21 +173,7 @@ class PageBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-    children: [...children, const SizedBox(height: 12), const DemoNotice()],
-  );
-}
-
-class DemoNotice extends StatelessWidget {
-  const DemoNotice({super.key});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(color: const Color(0xFF252033), borderRadius: BorderRadius.circular(13), border: Border.all(color: violet.withOpacity(.22))),
-    child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(Icons.info_outline, color: Color(0xFFBBA8FF), size: 18),
-      SizedBox(width: 9),
-      Expanded(child: Text('DEMO MODE • ตัวเลขและการเชื่อมต่อเป็นข้อมูลจำลอง ยังไม่มีการยิงโฆษณาจริง', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11, height: 1.45))),
-    ]),
+    children: children,
   );
 }
 
@@ -156,49 +212,140 @@ class SectionTitle extends StatelessWidget {
   );
 }
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
   @override
-  Widget build(BuildContext context) => PageBody(children: [
-    Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF302653), Color(0xFF171725), Color(0xFF11131B)]),
-        border: Border.all(color: violet.withOpacity(.3)),
-        boxShadow: [BoxShadow(color: violet.withOpacity(.12), blurRadius: 24, offset: const Offset(0, 10))],
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  bool _loading = true;
+  String? _error;
+  Map<String, dynamic>? _insights;
+  List<Map<String, dynamic>> _accounts = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final accounts = await MetaApi.adAccounts();
+      if (accounts.isEmpty) {
+        if (!mounted) return;
+        setState(() { _accounts = accounts; _insights = null; });
+        return;
+      }
+      final id = accounts.first['id']?.toString() ?? '';
+      if (id.isEmpty) throw Exception('ไม่พบรหัสบัญชีโฆษณา');
+      final response = await MetaApi.insights(id, datePreset: 'last_7d');
+      if (!mounted) return;
+      final value = response['insights'];
+      setState(() {
+        _accounts = accounts;
+        _insights = value is Map ? Map<String, dynamic>.from(value) : null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _value(dynamic value, {int decimals = 0}) {
+    final number = num.tryParse(value?.toString() ?? '');
+    if (number == null) return '—';
+    return decimals == 0 ? number.round().toString() : number.toStringAsFixed(decimals);
+  }
+
+  Widget _metric(String label, String value, IconData icon) => MetricCard(
+    label: label, value: value, delta: 'ข้อมูล Meta • 7 วันล่าสุด', icon: icon,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = _insights?['account_currency']?.toString() ?? '';
+    return PageBody(children: [
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+            colors: [Color(0xFF292244), Color(0xFF171925), Color(0xFF11131B)],
+          ),
+          border: Border.all(color: violet.withOpacity(.22)),
+        ),
+        child: Row(children: [
+          const Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('โฆษณาของคุณ ในมุมมองเดียว',
+                style: TextStyle(fontSize: 19, height: 1.25, fontWeight: FontWeight.w800)),
+              SizedBox(height: 7),
+              Text('ติดตามประสิทธิภาพจากบัญชี Meta ที่เชื่อมต่อจริง',
+                style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11, height: 1.5)),
+            ],
+          )),
+          const SizedBox(width: 10),
+          const BrandMark(size: 54),
+        ]),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('YOUR ADVERTISING,\nONE INTELLIGENT SPACE.', style: TextStyle(fontSize: 21, height: 1.25, fontWeight: FontWeight.w900, letterSpacing: .4)),
+      SectionTitle('ภาพรวมผลลัพธ์', action: _loading ? 'กำลังโหลด' : '7 วันล่าสุด'),
+      if (_loading) const LinearProgressIndicator(minHeight: 2),
+      if (_error != null) CardPanel(child: Text(_error!, style: const TextStyle(color: Color(0xFFFFA0A0), fontSize: 12))),
+      if (!_loading && _error == null && _accounts.isEmpty)
+        CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.link_off_rounded, color: muted, size: 26),
+          const SizedBox(height: 9),
+          const Text('ยังไม่มีบัญชีโฆษณาที่เชื่อมต่อ', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 5),
+          const Text('เชื่อมต่อ Meta เพื่อเริ่มอ่านผลโฆษณาจริง', style: TextStyle(color: muted, fontSize: 11)),
+        ])),
+      if (_insights != null) ...[
+        Text(_insights?['account_name']?.toString() ?? 'บัญชีโฆษณาที่เลือก',
+          style: const TextStyle(color: muted, fontSize: 11)),
         const SizedBox(height: 9),
-        const Text('วางแผน จัดการ และวิเคราะห์แคมเปญในที่เดียว', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 12)),
-        const SizedBox(height: 18),
-        FilledButton.icon(onPressed: () => notice(context, 'Campaign Studio เป็นโหมดทดลอง'), icon: const Icon(Icons.add, size: 18), label: const Text('Create campaign'), style: FilledButton.styleFrom(backgroundColor: violet, foregroundColor: Colors.white)),
-      ]),
-    ),
-    const SectionTitle('Performance snapshot', action: 'DEMO DATA'),
-    const Row(children: [
-      Expanded(child: MetricCard(label: 'Total spend', value: '฿8,420', delta: '+12.8% vs last period', icon: Icons.payments_outlined)),
-      SizedBox(width: 10),
-      Expanded(child: MetricCard(label: 'Impressions', value: '42.8K', delta: '+8.4% vs last period', icon: Icons.visibility_outlined)),
-    ]),
-    const SizedBox(height: 10),
-    const Row(children: [
-      Expanded(child: MetricCard(label: 'Clicks', value: '1,284', delta: '+5.2% vs last period', icon: Icons.ads_click)),
-      SizedBox(width: 10),
-      Expanded(child: MetricCard(label: 'ROAS', value: '3.42x', delta: '+0.6x vs last period', icon: Icons.trending_up)),
-    ]),
-    const SectionTitle('Connected platforms'),
-    const PlatformTile(name: 'Meta Ads', subtitle: 'Facebook & Instagram', icon: Icons.facebook, status: 'Not connected'),
-    const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'Not connected'),
-    const SectionTitle('Quick tools'),
-    const Wrap(spacing: 8, runSpacing: 8, children: [
-      QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
-      QuickChip(icon: Icons.groups_outlined, label: 'Audience'),
-      QuickChip(icon: Icons.insights, label: 'Reports'),
-      QuickChip(icon: Icons.receipt_long, label: 'Billing'),
-    ]),
-  ]);
+        Row(children: [
+          Expanded(child: _metric('ยอดใช้จ่าย', '${_value(_insights?['spend'], decimals: 2)} $currency', Icons.payments_outlined)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('การเข้าถึง', _value(_insights?['reach']), Icons.groups_outlined)),
+        ]),
+        const SizedBox(height: 9),
+        Row(children: [
+          Expanded(child: _metric('การแสดงผล', _value(_insights?['impressions']), Icons.visibility_outlined)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('คลิก', _value(_insights?['clicks']), Icons.ads_click)),
+        ]),
+        const SizedBox(height: 9),
+        Row(children: [
+          Expanded(child: _metric('CTR', '${_value(_insights?['ctr'], decimals: 2)}%', Icons.trending_up)),
+          const SizedBox(width: 9),
+          Expanded(child: _metric('ความถี่', _value(_insights?['frequency'], decimals: 2), Icons.repeat)),
+        ]),
+      ],
+      if (_insights == null && !_loading && _accounts.isNotEmpty && _error == null)
+        const CardPanel(child: Text('Meta ยังไม่มีข้อมูล Insights สำหรับช่วงเวลานี้ หรือสิทธิ์ ads_read ยังไม่พร้อม',
+          style: TextStyle(color: muted, fontSize: 12))),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: _loading ? null : _load,
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('รีเฟรชข้อมูล'),
+      ),
+      const SectionTitle('แพลตฟอร์มที่รองรับ'),
+      PlatformTile(name: 'Meta Ads', subtitle: 'Facebook และ Instagram', icon: Icons.facebook,
+        status: _accounts.isNotEmpty ? 'เชื่อมต่อแล้ว' : 'ยังไม่เชื่อมต่อ'),
+      const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'รอพัฒนา'),
+      const SizedBox(height: 8),
+      const Text('ตัวเลขจะแสดงเมื่อ API ส่งข้อมูลจริงเท่านั้น ไม่มีการเติมตัวเลขตัวอย่าง',
+        style: TextStyle(color: muted, fontSize: 10, height: 1.5)),
+    ]);
+  }
 }
 
 class QuickChip extends StatelessWidget {
@@ -1126,6 +1273,134 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       const Text(
         'หมายเหตุ: รายงานนี้ดึงข้อมูลแบบอ่านอย่างเดียวจาก Meta Marketing API ตัวเลขอาจล่าช้าตามการประมวลผลและเขตเวลาของบัญชีโฆษณา ไม่มีการสร้าง แก้ไข หรือเผยแพร่โฆษณา',
         style: TextStyle(color: muted, fontSize: 10, height: 1.5),
+      ),
+    ]);
+  }
+}
+
+class AdminPage extends StatefulWidget {
+  const AdminPage({super.key});
+  @override
+  State<AdminPage> createState() => _AdminPageState();
+}
+
+class _AdminPageState extends State<AdminPage> {
+  bool _loading = true;
+  String? _error;
+  Map<String, dynamic> _overview = const {};
+  List<Map<String, dynamic>> _connections = const [];
+  List<Map<String, dynamic>> _events = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        MetaApi.adminOverview(),
+        MetaApi.adminConnections(),
+        MetaApi.adminAudit(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _overview = results[0];
+        _connections = (results[1]['connections'] is List)
+            ? (results[1]['connections'] as List).whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item)).toList()
+            : const [];
+        _events = (results[2]['events'] is List)
+            ? (results[2]['events'] as List).whereType<Map>()
+                .map((item) => Map<String, dynamic>.from(item)).toList()
+            : const [];
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final metrics = _overview['metrics'] is Map
+        ? Map<String, dynamic>.from(_overview['metrics'])
+        : <String, dynamic>{};
+    return PageBody(children: [
+      CardPanel(child: Row(children: [
+        const Icon(Icons.admin_panel_settings_outlined, color: violet, size: 30),
+        const SizedBox(width: 12),
+        const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('ADNEXA Control Center', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+          SizedBox(height: 3),
+          Text('พื้นที่ผู้ดูแลระบบ • สิทธิ์แยกจากบัญชีลูกค้า', style: TextStyle(color: muted, fontSize: 10)),
+        ])),
+        const Chip(label: Text('ADMIN')),
+      ])),
+      if (_loading) const LinearProgressIndicator(minHeight: 2),
+      if (_error != null) CardPanel(child: Text(
+        _error! + (_error!.contains('Forbidden') ? '\nบัญชีนี้ยังไม่มี Firebase admin custom claim' : ''),
+        style: const TextStyle(color: Color(0xFFFFA0A0), fontSize: 12),
+      )),
+      if (_error == null && !_loading) ...[
+        const SectionTitle('สถานะระบบ'),
+        Row(children: [
+          Expanded(child: MetricCard(
+            label: 'บัญชีที่เชื่อมต่อ',
+            value: '${metrics['connected_users'] ?? 0}',
+            delta: 'จากฐานข้อมูล ADNEXA',
+            icon: Icons.people_alt_outlined,
+          )),
+          const SizedBox(width: 9),
+          Expanded(child: MetricCard(
+            label: 'การเชื่อมต่อที่ยังใช้ได้',
+            value: '${metrics['active_connections'] ?? 0}',
+            delta: 'ตรวจจากวันหมดอายุ Token',
+            icon: Icons.verified_outlined,
+          )),
+        ]),
+        const SectionTitle('การเชื่อมต่อ Meta'),
+        if (_connections.isEmpty)
+          const CardPanel(child: Text('ยังไม่มีรายการเชื่อมต่อ', style: TextStyle(color: muted, fontSize: 11))),
+        ..._connections.map((item) => CardPanel(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item['meta_name']?.toString() ?? 'Meta account',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text('Meta ID: ${item['meta_user_id'] ?? '—'}',
+              style: const TextStyle(color: muted, fontSize: 10)),
+            Text('User UID: ${item['user_id'] ?? '—'}',
+              style: const TextStyle(color: muted, fontSize: 9)),
+          ]),
+        )),
+        const SectionTitle('บันทึกกิจกรรมผู้ดูแล'),
+        if (_events.isEmpty)
+          const CardPanel(child: Text('ยังไม่มีบันทึกกิจกรรม', style: TextStyle(color: muted, fontSize: 11))),
+        ..._events.map((event) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(children: [
+            const Icon(Icons.history, color: muted, size: 17),
+            const SizedBox(width: 8),
+            Expanded(child: Text(event['action']?.toString() ?? 'admin action',
+              style: const TextStyle(fontSize: 11))),
+            Text(event['created_at']?.toString() ?? '',
+              style: const TextStyle(color: muted, fontSize: 9)),
+          ]),
+        )),
+        const SectionTitle('ขอบเขตสิทธิ์ในรุ่นนี้'),
+        const CardPanel(child: Text(
+          'รุ่นนี้เป็น Admin Read-only: ตรวจดูจำนวนการเชื่อมต่อ Meta และบันทึกการเข้าถึงได้ ยังไม่เปิดดู/แก้ไขข้อมูลส่วนตัวลูกค้า จัดการบทบาท ระงับบัญชี หรือควบคุมงบโฆษณา การเพิ่มผู้ดูแลต้องกำหนด Firebase custom claim จากช่องทางที่เชื่อถือได้เท่านั้น',
+          style: TextStyle(color: muted, fontSize: 11, height: 1.55),
+        )),
+      ],
+      OutlinedButton.icon(
+        onPressed: _loading ? null : _load,
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('รีเฟรชข้อมูลผู้ดูแล'),
       ),
     ]);
   }
