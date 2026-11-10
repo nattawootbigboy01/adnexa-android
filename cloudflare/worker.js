@@ -306,41 +306,52 @@ async function handleMetaCallback(url, env) {
   if (!state) return callbackPage(false);
   const record = await consumeState(env, "meta", state);
   if (!record) return callbackPage(false);
-  if (error || !code) return callbackPage(false);
+  if (error || !code || code.length > 4096) return callbackPage(false);
 
-  const missing = requiredEnv(env, [
-    "META_APP_ID",
-    "META_APP_SECRET",
-    "META_REDIRECT_URI",
-    "META_TOKEN_ENCRYPTION_KEY"
-  ]);
-  if (missing.length) return callbackPage(false);
+  let stage = "configuration";
+  try {
+    const missing = requiredEnv(env, [
+      "META_APP_ID",
+      "META_APP_SECRET",
+      "META_REDIRECT_URI",
+      "META_TOKEN_ENCRYPTION_KEY"
+    ]);
+    if (missing.length) throw new Error("Missing Meta OAuth configuration");
 
-  const token = await getMetaAccessToken(env, code);
-  const identity = await getMetaIdentity(env, token.accessToken);
-  const encrypted = await encryptToken(env, token.accessToken);
-  await ensureMetaTable(env);
+    stage = "token_exchange";
+    const token = await getMetaAccessToken(env, code);
+    stage = "identity_verification";
+    const identity = await getMetaIdentity(env, token.accessToken);
+    stage = "token_encryption";
+    const encrypted = await encryptToken(env, token.accessToken);
+    stage = "database";
+    await ensureMetaTable(env);
 
-  const now = Math.floor(Date.now() / 1000);
-  const expiresAt = token.expiresIn === null
-    ? null
-    : now + Math.max(0, token.expiresIn);
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = token.expiresIn === null
+      ? null
+      : now + Math.max(0, token.expiresIn);
 
-  await env.DB.prepare(
-    "INSERT INTO meta_connections (user_id, meta_user_id, meta_name, token_ciphertext, token_iv, token_type, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET meta_user_id = excluded.meta_user_id, meta_name = excluded.meta_name, token_ciphertext = excluded.token_ciphertext, token_iv = excluded.token_iv, token_type = excluded.token_type, expires_at = excluded.expires_at, updated_at = excluded.updated_at"
-  ).bind(
-    record.user_id,
-    identity.id,
-    identity.name,
-    encrypted.ciphertext,
-    encrypted.iv,
-    token.tokenType,
-    expiresAt,
-    now,
-    now
-  ).run();
+    await env.DB.prepare(
+      "INSERT INTO meta_connections (user_id, meta_user_id, meta_name, token_ciphertext, token_iv, token_type, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET meta_user_id = excluded.meta_user_id, meta_name = excluded.meta_name, token_ciphertext = excluded.token_ciphertext, token_iv = excluded.token_iv, token_type = excluded.token_type, expires_at = excluded.expires_at, updated_at = excluded.updated_at"
+    ).bind(
+      record.user_id,
+      identity.id,
+      identity.name,
+      encrypted.ciphertext,
+      encrypted.iv,
+      token.tokenType,
+      expiresAt,
+      now,
+      now
+    ).run();
 
-  return callbackPage(true);
+    return callbackPage(true);
+  } catch {
+    // Log only the stage. Never log OAuth codes, state, tokens, or secrets.
+    console.error("Meta OAuth callback failed at stage:", stage);
+    return callbackPage(false);
+  }
 }
 
 async function getAuthenticatedMetaConnection(request, env) {
@@ -392,24 +403,41 @@ async function handleMetaAdAccounts(request, env) {
     return json({ error: "Stored Meta credential unavailable" }, 503);
   }
 
+  const cursor = new URL(request.url).searchParams.get("after");
+  if (cursor !== null && (cursor.length === 0 || cursor.length > 2048)) {
+    return json({ error: "Invalid pagination cursor" }, 400);
+  }
+
   const endpoint = new URL(
     "https://graph.facebook.com/" + metaVersion(env) + "/me/adaccounts"
   );
   endpoint.searchParams.set("fields", "id,name,account_status,currency,timezone_name");
   endpoint.searchParams.set("limit", "100");
   endpoint.searchParams.set("access_token", accessToken);
+  if (cursor !== null) endpoint.searchParams.set("after", cursor);
 
   const response = await fetch(endpoint.toString(), {
     headers: { "Accept": "application/json" }
   });
   const resultBody = await response.json().catch(() => ({}));
 
+  const metaErrorCode = resultBody && resultBody.error &&
+    Number(resultBody.error.code);
+  const reauthorizationRequired =
+    response.status === 401 || metaErrorCode === 190;
+
   if (!response.ok || !Array.isArray(resultBody.data)) {
     return json({
       error: "Unable to retrieve Meta ad accounts",
-      reauthorization_required: response.status === 401
-    }, response.status === 401 ? 401 : 502);
+      reauthorization_required: reauthorizationRequired
+    }, reauthorizationRequired ? 401 : 502);
   }
+
+  const nextCursor = resultBody.paging &&
+    resultBody.paging.cursors &&
+    typeof resultBody.paging.cursors.after === "string"
+      ? resultBody.paging.cursors.after
+      : null;
 
   return json({
     provider: "meta",
@@ -420,7 +448,8 @@ async function handleMetaAdAccounts(request, env) {
       currency: account.currency || null,
       timezone: account.timezone_name || null
     })),
-    has_more: !!(resultBody.paging && resultBody.paging.next)
+    has_more: !!(resultBody.paging && resultBody.paging.next),
+    next_cursor: nextCursor
   });
 }
 
