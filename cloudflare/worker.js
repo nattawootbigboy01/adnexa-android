@@ -453,6 +453,86 @@ async function handleMetaAdAccounts(request, env) {
   });
 }
 
+async function handleMetaInsights(request, env) {
+  const connection = await getAuthenticatedMetaConnection(request, env);
+  if (connection.response) return connection.response;
+
+  const url = new URL(request.url);
+  const rawAccountId = url.searchParams.get("ad_account_id") || "";
+  const accountId = rawAccountId.replace(/^act_/, "");
+  const datePreset = url.searchParams.get("date_preset") || "last_7d";
+  const allowedPresets = new Set([
+    "yesterday", "last_7d", "last_14d", "last_30d",
+    "last_90d", "this_month", "last_month"
+  ]);
+
+  if (!/^\\d{5,30}$/.test(accountId)) {
+    return json({ error: "Invalid ad account ID" }, 400);
+  }
+  if (!allowedPresets.has(datePreset)) {
+    return json({ error: "Unsupported reporting date range" }, 400);
+  }
+
+  let accessToken;
+  try {
+    accessToken = await decryptToken(env, connection.row);
+  } catch {
+    return json({ error: "Stored Meta credential unavailable" }, 503);
+  }
+
+  const endpoint = new URL(
+    "https://graph.facebook.com/" + metaVersion(env) + "/act_" + accountId + "/insights"
+  );
+  endpoint.searchParams.set(
+    "fields",
+    "account_id,account_name,account_currency,spend,impressions,reach,clicks,ctr,cpc,cpm,frequency,date_start,date_stop"
+  );
+  endpoint.searchParams.set("level", "account");
+  endpoint.searchParams.set("date_preset", datePreset);
+  endpoint.searchParams.set("limit", "10");
+  endpoint.searchParams.set("access_token", accessToken);
+
+  const response = await fetch(endpoint.toString(), {
+    headers: { "Accept": "application/json" }
+  });
+  const body = await response.json().catch(() => ({}));
+  const metaErrorCode = body && body.error && Number(body.error.code);
+
+  if (!response.ok || !Array.isArray(body.data)) {
+    const reauthorizationRequired =
+      response.status === 401 || metaErrorCode === 190;
+    const permissionDenied = metaErrorCode === 10 || metaErrorCode === 200;
+    return json({
+      error: permissionDenied
+        ? "Meta permission does not allow Insights access"
+        : "Unable to retrieve Meta Insights",
+      reauthorization_required: reauthorizationRequired
+    }, reauthorizationRequired ? 401 : permissionDenied ? 403 : 502);
+  }
+
+  const row = body.data.length ? body.data[0] : null;
+  return json({
+    provider: "meta",
+    level: "account",
+    date_preset: datePreset,
+    insights: row ? {
+      account_id: row.account_id || accountId,
+      account_name: row.account_name || null,
+      account_currency: row.account_currency || null,
+      spend: row.spend ?? "0",
+      impressions: row.impressions ?? "0",
+      reach: row.reach ?? "0",
+      clicks: row.clicks ?? "0",
+      ctr: row.ctr ?? "0",
+      cpc: row.cpc ?? "0",
+      cpm: row.cpm ?? "0",
+      frequency: row.frequency ?? "0",
+      date_start: row.date_start || null,
+      date_stop: row.date_stop || null
+    } : null
+  });
+}
+
 async function handleMetaDisconnect(request, env) {
   let userId;
   try {
@@ -519,6 +599,10 @@ export default {
 
       if (method === "GET" && path === "/api/meta/connection") {
         return await handleMetaConnection(request, env);
+      }
+
+      if (method === "GET" && path === "/api/meta/insights") {
+        return await handleMetaInsights(request, env);
       }
 
       if (method === "GET" && path === "/api/meta/ad-accounts") {
