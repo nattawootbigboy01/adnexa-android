@@ -73,7 +73,7 @@ class _AppShellState extends State<AppShell> {
   ];
 
   List<String> get _titles => [
-    'ภาพรวม', 'แคมเปญ', 'บัญชีโฆษณา', 'AI Planner', 'Insights',
+    'ภาพรวม', 'แคมเปญ', 'บัญชีโฆษณา', 'Planner', 'Insights',
     if (_isAdmin) 'ศูนย์ผู้ดูแล',
   ];
 
@@ -84,7 +84,7 @@ class _AppShellState extends State<AppShell> {
       const NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'หน้าหลัก'),
       const NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'แคมเปญ'),
       const NavigationDestination(icon: Icon(Icons.link_rounded), label: 'บัญชี'),
-      const NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
+      const NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'Planner'),
       const NavigationDestination(icon: Icon(Icons.query_stats), label: 'Insights'),
       if (_isAdmin)
         const NavigationDestination(icon: Icon(Icons.admin_panel_settings_outlined), label: 'Admin'),
@@ -100,7 +100,7 @@ class _AppShellState extends State<AppShell> {
             const SizedBox(width: 11),
             const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('ADNEXA ADS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.7)),
-              Text('ADVERTISING INTELLIGENCE', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.3)),
+              Text('ยิงแอดระดับเทพ', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.3)),
             ]),
             const Spacer(),
             IconButton(
@@ -147,14 +147,11 @@ class BrandMark extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(size * .29),
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xFFE1D9FF), Color(0xFF368CFF), Color(0xFF4D35A8)],
-      ),
+      color: const Color(0xFF080B10),
+      borderRadius: BorderRadius.circular(size * .24),
+      border: Border.all(color: const Color(0xFF66758A).withOpacity(.42)),
       boxShadow: [
-        BoxShadow(color: violet.withOpacity(.25), blurRadius: 18, offset: const Offset(0, 5)),
+        BoxShadow(color: const Color(0xFF258BFF).withOpacity(.18), blurRadius: 16, offset: const Offset(0, 4)),
       ],
     ),
     child: Stack(
@@ -401,7 +398,7 @@ class _CampaignPageState extends State<CampaignPage> {
   final budget = TextEditingController(text: '300');
   String platform = 'Meta Ads';
   String objective = 'Traffic';
-  String campaignMode = 'AI';
+  String campaignMode = 'Offline';
   RangeValues ageRange = const RangeValues(18, 60);
   String? aiAgeSuggestion;
   String manualGender = 'ทุกเพศ';
@@ -434,19 +431,6 @@ class _CampaignPageState extends State<CampaignPage> {
   String get objectiveDescription =>
       objectiveDescriptions[objective] ?? 'เลือกวัตถุประสงค์ให้ตรงกับผลลัพธ์ที่ต้องการ';
 
-  String _formatPeople(int value) => value.toString();
-
-  String get reachEstimate {
-    final dailyAmount = double.tryParse(budget.text.trim());
-    if (dailyAmount == null || dailyAmount <= 0) {
-      return 'กรุณากรอกงบประมาณต่อวันเพื่อดูประมาณการ';
-    }
-    final totalBudget = dailyAmount * durationDays;
-    // Planning-only assumptions: CPM ฿30–฿100 and frequency 1.2–2.0.
-    final low = (totalBudget / 100 * 1000 / 2).round();
-    final high = (totalBudget / 30 * 1000 / 1.2).round();
-    return _formatPeople(low) + '–' + _formatPeople(high) + ' คน';
-  }
 
   @override
   void initState() {
@@ -499,12 +483,11 @@ class _CampaignPageState extends State<CampaignPage> {
 
 
   void _showPublishReview() {
-    final amount = double.tryParse(budget.text.trim());
     if (name.text.trim().isEmpty || amount == null || amount <= 0) {
       notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
       return;
     }
-    if (campaignMode == 'AI' && aiPlan == null) {
+    if (campaignMode == 'Offline' && aiPlan == null) {
       notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนตรวจสอบ');
       return;
     }
@@ -550,12 +533,12 @@ class _CampaignPageState extends State<CampaignPage> {
     const Text('เลือกวิธีจัดการแคมเปญ', style: TextStyle(color: muted, fontSize: 12)),
     const SizedBox(height: 10),
     Row(children: [
-      Expanded(child: _ModeCard(selected: campaignMode == 'AI', icon: Icons.auto_awesome, title: 'ให้ AI ช่วยทำ', subtitle: 'วิเคราะห์และเสนอแผน', onTap: () => setState(() { campaignMode = 'AI'; aiPlan = null; aiAgeSuggestion = null; }))),
+      Expanded(child: _ModeCard(selected: campaignMode == 'AI', icon: Icons.auto_awesome, title: 'ตัวช่วยวางแผน', subtitle: 'คำแนะนำออฟไลน์', onTap: () => setState(() { campaignMode = 'AI'; aiPlan = null; aiAgeSuggestion = null; }))),
       const SizedBox(width: 10),
       Expanded(child: _ModeCard(selected: campaignMode == 'Manual', icon: Icons.tune_rounded, title: 'ทำเองทั้งหมด', subtitle: 'กำหนดเองทุกอย่าง', onTap: () => setState(() { campaignMode = 'Manual'; aiPlan = null; aiAgeSuggestion = null; }))),
     ]),
     const SizedBox(height: 10),
-    CardPanel(child: Text(campaignMode == 'AI' ? 'โหมด AI: ระบุสินค้า/บริการ แล้วให้ตัวช่วยเสนอแนวทาง โดยกำหนดพื้นที่โฆษณาเป็นประเทศไทยทั้งประเทศ' : 'โหมดทำเอง: คุณกำหนดกลุ่มลูกค้า อายุ เพศ และความสนใจได้เอง โดยพื้นที่โฆษณาล็อกไว้ในประเทศไทยทั้งประเทศ', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
+    CardPanel(child: Text(campaignMode == 'Offline' ? 'โหมดตัวช่วย: ระบุสินค้า/บริการ แล้วให้ระบบเสนอแนวทาง โดยกำหนดพื้นที่โฆษณาเป็นประเทศไทยทั้งประเทศ' : 'โหมดทำเอง: คุณกำหนดกลุ่มลูกค้า อายุ เพศ และความสนใจได้เอง โดยพื้นที่โฆษณาล็อกไว้ในประเทศไทยทั้งประเทศ', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -574,12 +557,12 @@ class _CampaignPageState extends State<CampaignPage> {
     ),
     Padding(padding: const EdgeInsets.only(top: 7), child: Text(objectiveDescription, style: const TextStyle(color: muted, fontSize: 11, height: 1.4))),
     const SizedBox(height: 15),
-    if (campaignMode == 'AI') ...[
+    if (campaignMode == 'Offline') ...[
       const SectionTitle('สินค้า/บริการที่ต้องการโปรโมต'),
       TextField(controller: productInfo, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น ร้านกาแฟเดลิเวอรี ราคาเริ่มต้น 45 บาท')),
       CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (กำหนดให้อัตโนมัติ)', style: TextStyle(fontSize: 11, color: muted)))])),
       const SizedBox(height: 10),
-      SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _makeAiPlan, icon: const Icon(Icons.auto_awesome), label: const Text('ให้ AI ช่วยวิเคราะห์และเสนอแผน'))),
+      SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _makeAiPlan, icon: const Icon(Icons.auto_awesome), label: const Text('สร้างคำแนะนำเบื้องต้น'))),
       if (aiPlan != null) CardPanel(child: SelectableText(aiPlan!, style: const TextStyle(fontSize: 12, height: 1.6))),
     ] else ...[
       CardPanel(child: const Row(children: [Icon(Icons.location_on_outlined, color: violet, size: 18), SizedBox(width: 8), Expanded(child: Text('พื้นที่โฆษณา: ประเทศไทยทั้งประเทศ (ไม่ต้องเลือกจังหวัด)', style: TextStyle(fontSize: 11, color: muted)))])),
@@ -617,7 +600,7 @@ class _CampaignPageState extends State<CampaignPage> {
     if (campaignMode == 'AI' && aiAgeSuggestion != null) ...[
       const SizedBox(height: 8),
       CardPanel(child: Row(children: [
-        const Expanded(child: Text('คำแนะนำช่วงอายุจาก AI', style: TextStyle(fontSize: 11, color: muted))),
+        const Expanded(child: Text('คำแนะนำช่วงอายุจากตัวช่วย', style: TextStyle(fontSize: 11, color: muted))),
         Text(aiAgeSuggestion!, style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF8CC7FF))),
         const SizedBox(width: 8),
         TextButton(onPressed: () {
@@ -642,13 +625,13 @@ class _CampaignPageState extends State<CampaignPage> {
     ),
     const SizedBox(height: 12),
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('ประมาณการจำนวนคนที่อาจเข้าถึงได้', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      const Text('ผลลัพธ์จากแพลตฟอร์ม', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
       const SizedBox(height: 7),
-      Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: Color(0xFF8CC7FF))),
+      const Text('ยังไม่มีข้อมูลจริง', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: muted)),
       const SizedBox(height: 5),
       Text('งบรวม: ฿${((double.tryParse(budget.text.trim()) ?? 0) * durationDays).toStringAsFixed(0)} ตลอด $durationDays วัน', style: const TextStyle(fontSize: 11, color: muted)),
       const SizedBox(height: 6),
-      const Text('ตัวเลขจำลองจากสมมติฐาน CPM ฿30–฿100 และความถี่ 1.2–2 ครั้งต่อคน ยังไม่ใช่ข้อมูลประมาณการจากแพลตฟอร์มโฆษณาจริง ไม่รับประกันผลลัพธ์ และจะต้องเชื่อมต่อ API ของแพลตฟอร์มก่อนจึงจะแสดงค่าจริงได้', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
+      const Text('เชื่อมบัญชี Meta และเปิดหน้า Insights เพื่อดูตัวเลขจริง ระบบจะไม่สร้างตัวเลขคาดการณ์แทนข้อมูลจากแพลตฟอร์ม', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
     ])),
     const SizedBox(height: 18),
     SizedBox(width: double.infinity, child: OutlinedButton.icon(
@@ -669,7 +652,7 @@ class _CampaignPageState extends State<CampaignPage> {
         if (startAge < 18 || endAge > 60 || startAge > endAge) { notice(context, 'กรุณากำหนดช่วงอายุ 18–60 ปีให้ถูกต้อง'); return; }
         if (campaignMode == 'AI' && aiPlan == null) { notice(context, 'กรุณาให้ตัวช่วยวิเคราะห์แผนก่อนบันทึก'); return; }
         if (campaignMode == 'Manual' && manualAudience.text.trim().isEmpty) { notice(context, 'กรุณาระบุกลุ่มลูกค้าในโหมดทำเอง'); return; }
-        final targeting = campaignMode == 'AI' ? 'AI PLAN: ' + (aiPlan ?? '') + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี' : 'MANUAL: พื้นที่ประเทศไทย, กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี, เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
+        final targeting = campaignMode == 'AI' ? 'OFFLINE PLAN: ' + (aiPlan ?? '') + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี' : 'MANUAL: พื้นที่ประเทศไทย, กลุ่ม ' + manualAudience.text.trim() + ', อายุ ' + startAge.toString() + '–' + endAge.toString() + ' ปี, เพศ ' + manualGender + ', ความสนใจ ' + manualInterests.text.trim();
         setState(() => drafts.insert(0, '${name.text.trim()} • $platform • ${objectiveLabels[objective] ?? objective} • ฿${amount.toStringAsFixed(0)}/day • $durationDays วัน • พื้นที่ประเทศไทย • MODE: $campaignMode • $targeting'));
         _saveDrafts();
         name.clear();
@@ -953,17 +936,14 @@ class AiPage extends StatefulWidget {
 class _AiPageState extends State<AiPage> {
   final product = TextEditingController();
   final audience = TextEditingController();
-  final budget = TextEditingController(text: '300');
   String tone = 'เป็นกันเอง';
   String? output;
   String? audiencePlan;
-  String? estimate;
 
   @override
   void dispose() {
     product.dispose();
     audience.dispose();
-    budget.dispose();
     super.dispose();
   }
 
@@ -972,10 +952,6 @@ class _AiPageState extends State<AiPage> {
     final amount = double.tryParse(budget.text.trim());
     if (item.isEmpty) {
       notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน');
-      return;
-    }
-    if (amount == null || amount < 50 || amount > 1000000) {
-      notice(context, 'กรุณาระบุงบประมาณตั้งแต่ 50 ถึง 1,000,000 บาท');
       return;
     }
 
@@ -1019,17 +995,11 @@ class _AiPageState extends State<AiPage> {
       offer = 'ทดลองข้อเสนอเริ่มต้นหรือแพ็กเกจที่ตรวจสอบกำไรแล้ว';
     }
     final objectiveAdvice = 'เป้าหมายแคมเปญ: เพิ่มการรับรู้ให้วัดการเข้าถึงและความถี่; เพิ่มผู้สนใจให้วัดจำนวน Lead และต้นทุนต่อ Lead; เพิ่มยอดขายให้วัดคำสั่งซื้อและกำไรหลังหักต้นทุน';
-    // Illustrative planning assumptions only: CPM 30-100 THB, CTR 0.5%-2%.
-    final impressionsLow = (amount / 100 * 1000).round();
-    final impressionsHigh = (amount / 30 * 1000).round();
-    final clicksLow = (impressionsLow * 0.005).round();
-    final clicksHigh = (impressionsHigh * 0.02).round();
     final customAudience = description.isEmpty ? 'ยังไม่ได้ระบุกลุ่มลูกค้าเฉพาะ' : description;
 
     setState(() {
       audiencePlan = 'กลุ่มเป้าหมายตั้งต้น: $segment\nกลุ่มลูกค้าที่คุณระบุ: $customAudience\n\nกลยุทธ์ตามประเภทธุรกิจ: $strategy\nรูปแบบสื่อที่แนะนำ: $creative\nข้อเสนอที่ควรทดลอง: $offer\n\n$objectiveAdvice\nแนวทาง: เริ่มทดสอบในพื้นที่ให้บริการและปรับกลุ่มตามผลตอบรับจริง';
       output = 'พบกับ $item ที่ออกแบบมาเพื่อตอบโจทย์คุณ เลือกสิ่งที่ใช่และติดต่อเราได้วันนี้!\nโทนข้อความ: $tone';
-      estimate = 'งบประมาณที่ใช้คำนวณ: ฿${amount.toStringAsFixed(0)} ต่อวัน\nการแสดงผลโดยประมาณ: ${impressionsLow.toString()}–${impressionsHigh.toString()} ครั้ง/วัน\nคลิกโดยประมาณ: ${clicksLow.toString()}–${clicksHigh.toString()} ครั้ง/วัน';
     });
   }
 
@@ -1039,22 +1009,20 @@ class _AiPageState extends State<AiPage> {
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        gradient: const LinearGradient(colors: [Color(0xFF302653), Color(0xFF171725)]),
+        gradient: const LinearGradient(colors: [Color(0xFF14263D), Color(0xFF11141C)]),
       ),
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.auto_awesome, color: Color(0xFF8CC7FF), size: 25),
         SizedBox(height: 10),
-        Text('ADNEXA Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text('ADNEXA ADS Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         SizedBox(height: 5),
-        Text('วิเคราะห์เบื้องต้น วางกลุ่มเป้าหมาย และประเมินผลตามงบประมาณ', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
+        Text('เครื่องมือช่วยวางแผนเบื้องต้น • ยังไม่เชื่อม AI ออนไลน์', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
       ]),
     ),
     const SectionTitle('1. สินค้าหรือบริการ'),
     TextField(controller: product, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น ร้านกาแฟเดลิเวอรี / บริการล้างแอร์')),
     const SectionTitle('2. ลูกค้าที่ต้องการเข้าถึง'),
     TextField(controller: audience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น คนทำงานอายุ 25–40 ปี ในขอนแก่น (ไม่บังคับ)')),
-    const SectionTitle('3. งบประมาณต่อวัน (บาท)'),
-    TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
     const SectionTitle('4. โทนข้อความโฆษณา'),
     DropdownButtonFormField<String>(
       value: tone,
@@ -1076,11 +1044,9 @@ class _AiPageState extends State<AiPage> {
       CardPanel(child: SelectableText(audiencePlan!, style: const TextStyle(fontSize: 13, height: 1.6))),
       const SectionTitle('ข้อความโฆษณาตัวอย่าง'),
       CardPanel(child: SelectableText(output!, style: const TextStyle(fontSize: 13, height: 1.6))),
-      const SectionTitle('ประมาณการผลลัพธ์'),
-      CardPanel(child: SelectableText(estimate!, style: const TextStyle(fontSize: 13, height: 1.6))),
     ],
     const Text(
-      'ข้อจำกัด: ระบบนี้เป็นเครื่องมือวางแผนแบบออฟไลน์ ไม่ได้เชื่อม AI หรือข้อมูลโฆษณาจริง ตัวเลขใช้สมมติฐาน CPM ฿30–฿100 และ CTR 0.5%–2% เพื่อแสดงช่วงตัวอย่างเท่านั้น ผลจริงอาจแตกต่างมากและไม่รับประกัน',
+      'สถานะ: ตัวช่วยนี้ทำงานด้วยกฎออฟไลน์ ไม่ใช่ AI ออนไลน์ ไม่ได้ดึงข้อมูลจาก Meta และไม่ส่งคำสั่งสร้างหรือเผยแพร่แคมเปญ ตัวเลขผลลัพธ์จริงจะแสดงในหน้า Insights หลังเชื่อมบัญชีและอ่านข้อมูลสำเร็จเท่านั้น',
       style: TextStyle(color: muted, fontSize: 10, height: 1.5),
     ),
   ]);
