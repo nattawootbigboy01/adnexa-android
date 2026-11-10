@@ -533,10 +533,22 @@ class _CampaignPageState extends State<CampaignPage> {
   Widget build(BuildContext context) => PageBody(children: [
     const Text('เลือกวิธีจัดการแคมเปญ', style: TextStyle(color: muted, fontSize: 12)),
     const SizedBox(height: 10),
-    Row(children: [
-      Expanded(child: _ModeCard(selected: campaignMode == 'Offline', icon: Icons.auto_awesome, title: 'ตัวช่วยวางแผน', subtitle: 'คำแนะนำออฟไลน์', onTap: () => setState(() { campaignMode = 'Offline'; aiPlan = null; aiAgeSuggestion = null; }))),
-      const SizedBox(width: 10),
-      Expanded(child: _ModeCard(selected: campaignMode == 'Manual', icon: Icons.tune_rounded, title: 'ทำเองทั้งหมด', subtitle: 'กำหนดเองทุกอย่าง', onTap: () => setState(() { campaignMode = 'Manual'; aiPlan = null; aiAgeSuggestion = null; }))),
+    Column(children: [
+      SizedBox(width: double.infinity, child: _ModeCard(
+        selected: campaignMode == 'Offline',
+        icon: Icons.auto_awesome,
+        title: 'ตัวช่วยวางแผน',
+        subtitle: 'คำแนะนำออฟไลน์',
+        onTap: () => setState(() { campaignMode = 'Offline'; aiPlan = null; aiAgeSuggestion = null; }),
+      )),
+      const SizedBox(height: 8),
+      SizedBox(width: double.infinity, child: _ModeCard(
+        selected: campaignMode == 'Manual',
+        icon: Icons.tune_rounded,
+        title: 'ทำเองทั้งหมด',
+        subtitle: 'กำหนดเองทุกอย่าง',
+        onTap: () => setState(() { campaignMode = 'Manual'; aiPlan = null; aiAgeSuggestion = null; }),
+      )),
     ]),
     const SizedBox(height: 10),
     CardPanel(child: Text(campaignMode == 'Offline' ? 'โหมดตัวช่วย: ระบุสินค้า/บริการ แล้วให้ระบบเสนอแนวทาง โดยกำหนดพื้นที่โฆษณาเป็นประเทศไทยทั้งประเทศ' : 'โหมดทำเอง: คุณกำหนดกลุ่มลูกค้า อายุ เพศ และความสนใจได้เอง โดยพื้นที่โฆษณาล็อกไว้ในประเทศไทยทั้งประเทศ', style: const TextStyle(fontSize: 11, color: muted, height: 1.5))),
