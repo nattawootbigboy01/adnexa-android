@@ -559,7 +559,7 @@ async function handleMetaInsights(request, env) {
     "last_90d", "this_month", "last_month"
   ]);
 
-  if (!/^\\d{5,30}$/.test(accountId)) {
+  if (!/^\d{5,30}$/.test(accountId)) {
     return json({ error: "Invalid ad account ID" }, 400);
   }
   if (!allowedPresets.has(datePreset)) {
