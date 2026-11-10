@@ -483,6 +483,7 @@ class _CampaignPageState extends State<CampaignPage> {
 
 
   void _showPublishReview() {
+    final amount = double.tryParse(budget.text.trim());
     if (name.text.trim().isEmpty || amount == null || amount <= 0) {
       notice(context, 'กรุณากรอกชื่อแคมเปญและงบประมาณให้ถูกต้อง');
       return;
