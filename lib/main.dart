@@ -189,7 +189,6 @@ class DashboardPage extends StatelessWidget {
     const SectionTitle('Connected platforms'),
     const PlatformTile(name: 'Meta Ads', subtitle: 'Facebook & Instagram', icon: Icons.facebook, status: 'Not connected'),
     const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'Not connected'),
-    const PlatformTile(name: 'Google Ads', subtitle: 'Search, Display & YouTube', icon: Icons.ads_click, status: 'Not connected'),
     const SectionTitle('Quick tools'),
     const Wrap(spacing: 8, runSpacing: 8, children: [
       QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
@@ -399,7 +398,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads', 'Google Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -553,7 +552,6 @@ class AccountsPage extends StatelessWidget {
     for (final p in const [
       ['Meta Ads', 'Facebook & Instagram campaign accounts', 'Meta'],
       ['TikTok Ads', 'TikTok for Business advertiser accounts', 'TikTok'],
-      ['Google Ads', 'Google Search, Display and YouTube', 'Google'],
     ])
       CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(p[0], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
