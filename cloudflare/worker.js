@@ -277,8 +277,10 @@ async function handleMetaStart(request, env) {
 
   const missing = requiredEnv(env, [
     "META_APP_ID",
+    "META_APP_SECRET",
     "META_LOGIN_CONFIG_ID",
-    "META_REDIRECT_URI"
+    "META_REDIRECT_URI",
+    "META_TOKEN_ENCRYPTION_KEY"
   ]);
   if (missing.length) {
     return json({
