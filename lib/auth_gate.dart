@@ -235,10 +235,10 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Icon(Icons.bolt_rounded,
+                    const Icon(Icons.auto_graph_rounded,
                         size: 52, color: Color(0xFFB8A5FF)),
                     const SizedBox(height: 12),
-                    const Text('ADNEXA',
+                    const Text('ADNEXA ADS',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 28,
@@ -454,7 +454,7 @@ class _AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'ADNEXA',
+        title: 'ADNEXA Ads',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
