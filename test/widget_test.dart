@@ -14,6 +14,10 @@ void main() {
 
   testWidgets('Campaign Studio restricts age targeting to 18-60', (tester) async {
     SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(430, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       const MaterialApp(home: Scaffold(body: CampaignPage())),
     );
@@ -22,14 +26,6 @@ void main() {
     // The age selector is shared by AI and Manual modes; switch to Manual
     // because the current default AI mode intentionally hides manual-only fields.
     await tester.tap(find.text('ทำเองทั้งหมด'));
-    await tester.pumpAndSettle();
-
-    // CampaignPage uses a lazy ListView; scroll the age control into the tree.
-    await tester.scrollUntilVisible(
-      find.byType(RangeSlider),
-      350,
-      scrollable: find.byType(Scrollable).first,
-    );
     await tester.pumpAndSettle();
 
     final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
