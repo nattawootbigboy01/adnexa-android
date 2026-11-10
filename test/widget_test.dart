@@ -12,6 +12,19 @@ void main() {
     expect(find.textContaining('FIREBASE_API_KEY'), findsOneWidget);
   });
 
+
+  testWidgets('Planner identifies offline capabilities and does not show synthetic forecasts', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: AiPage())),
+    );
+    expect(
+      find.text('เครื่องมือช่วยวางแผนเบื้องต้น • ยังไม่เชื่อม AI ออนไลน์'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('ไม่ใช่ AI ออนไลน์'), findsOneWidget);
+    expect(find.text('ประมาณการผลลัพธ์'), findsNothing);
+  });
+
   testWidgets('Campaign Studio restricts age targeting to 18-60', (tester) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(430, 2600);
