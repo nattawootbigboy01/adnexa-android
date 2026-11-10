@@ -555,7 +555,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('แพลตฟอร์มที่รองรับ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    const Align(alignment: Alignment.centerLeft, child: Chip(avatar: Icon(Icons.facebook, size: 16), label: Text('Meta Ads'))),
+    Align(alignment: Alignment.centerLeft, child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9), decoration: BoxDecoration(color: const Color(0xFF14263D), borderRadius: BorderRadius.circular(12)), child: const Text('●  Meta Ads', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)))),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -565,14 +565,23 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 7),
     Wrap(
       spacing: 8,
-      runSpacing: 4,
-      children: objectiveLabels.entries.map((entry) => ChoiceChip(
-        label: Text(entry.value),
-        selected: objective == entry.key,
-        onSelected: (selected) {
-          if (selected) setState(() => objective = entry.key);
-        },
-      )).toList(),
+      runSpacing: 8,
+      children: objectiveLabels.entries.map((entry) {
+        final selected = objective == entry.key;
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => objective = entry.key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? const Color(0xFF14263D) : panel,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: selected ? violet : Colors.white12),
+            ),
+            child: Text('${selected ? '✓ ' : ''}${entry.value}', softWrap: true, style: TextStyle(fontSize: 11, color: selected ? Colors.white : muted)),
+          ),
+        );
+      }).toList(),
     ),
     Padding(padding: const EdgeInsets.only(top: 7), child: Text(objectiveDescription, style: const TextStyle(color: muted, fontSize: 11, height: 1.4))),
     const SizedBox(height: 15),
@@ -598,13 +607,18 @@ class _CampaignPageState extends State<CampaignPage> {
       const SectionTitle('เพศ'),
       Wrap(
         spacing: 8,
-        children: ['ทุกเพศ', 'ชาย', 'หญิง'].map((value) => ChoiceChip(
-          label: Text(value),
-          selected: manualGender == value,
-          onSelected: (selected) {
-            if (selected) setState(() => manualGender = value);
-          },
-        )).toList(),
+        children: ['ทุกเพศ', 'ชาย', 'หญิง'].map((value) {
+          final selected = manualGender == value;
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => manualGender = value),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(color: selected ? const Color(0xFF14263D) : panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: selected ? violet : Colors.white12)),
+              child: Text('${selected ? '✓ ' : ''}$value', style: TextStyle(fontSize: 11, color: selected ? Colors.white : muted)),
+            ),
+          );
+        }).toList(),
       ),
       const SectionTitle('ความสนใจ (ถ้ามี)'),
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
@@ -653,13 +667,18 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 7),
     Wrap(
       spacing: 8,
-      children: [1, 3, 7, 14, 30].map((days) => ChoiceChip(
-        label: Text('$days วัน'),
-        selected: durationDays == days,
-        onSelected: (selected) {
-          if (selected) setState(() => durationDays = days);
-        },
-      )).toList(),
+      children: [1, 3, 7, 14, 30].map((days) {
+        final selected = durationDays == days;
+        return InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => setState(() => durationDays = days),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(color: selected ? const Color(0xFF14263D) : panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: selected ? violet : Colors.white12)),
+            child: Text('${selected ? '✓ ' : ''}$days วัน', style: TextStyle(fontSize: 11, color: selected ? Colors.white : muted)),
+          ),
+        );
+      }).toList(),
     ),
     const SizedBox(height: 12),
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
