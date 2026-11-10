@@ -19,6 +19,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // The age selector is shared by AI and Manual modes; switch to Manual
+    // because the current default AI mode intentionally hides manual-only fields.
+    await tester.tap(find.text('ทำเองทั้งหมด'));
+    await tester.pumpAndSettle();
+
     final slider = tester.widget<RangeSlider>(find.byType(RangeSlider));
     expect(slider.min, 18);
     expect(slider.max, 60);
