@@ -152,7 +152,7 @@ function requiredEnv(env, names) {
 }
 
 function metaVersion(env) {
-  const version = env.META_GRAPH_API_VERSION || "v25.0";
+  const version = env.META_GRAPH_API_VERSION || "v27.0";
   if (!/^v\d+\.\d+$/.test(version)) {
     throw new Error("Invalid Meta Graph API version configuration");
   }
