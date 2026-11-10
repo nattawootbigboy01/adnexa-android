@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'auth_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'meta_api.dart';
 
 void main() => runApp(const AdnexaApp());
 
@@ -543,32 +545,243 @@ class _ModeCard extends StatelessWidget {
   );
 }
 
-class AccountsPage extends StatelessWidget {
+class AccountsPage extends StatefulWidget {
   const AccountsPage({super.key});
+
+  @override
+  State<AccountsPage> createState() => _AccountsPageState();
+}
+
+class _AccountsPageState extends State<AccountsPage>
+    with WidgetsBindingObserver {
+  bool _loading = false;
+  bool _connecting = false;
+  bool _connected = false;
+  String? _accountName;
+  String? _error;
+  List<Map<String, dynamic>> _adAccounts = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_loading && !_connecting) {
+      _refresh();
+    }
+  }
+
+  Future<void> _refresh() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final status = await MetaApi.connection();
+      final connected = status['connected'] == true;
+      List<Map<String, dynamic>> accounts = const [];
+      if (connected) {
+        accounts = await MetaApi.adAccounts();
+      }
+      if (!mounted) return;
+      setState(() {
+        _connected = connected;
+        final account = status['account'];
+        _accountName = account is Map
+            ? account['name']?.toString()
+            : null;
+        _adAccounts = accounts;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _connect() async {
+    setState(() {
+      _connecting = true;
+      _error = null;
+    });
+    try {
+      final authorizationUrl = await MetaApi.startConnection();
+      final opened = await launchUrl(
+        authorizationUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) throw Exception('ไม่สามารถเปิดหน้าเข้าสู่ระบบ Meta ได้');
+      if (mounted) {
+        notice(context, 'เปิดหน้า Meta แล้ว กรุณาอนุญาตและกลับมาแอป ADNEXA');
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) setState(() => _connecting = false);
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยกเลิกการเชื่อมต่อ Meta?'),
+        content: const Text('ADNEXA จะลบ Token ที่จัดเก็บไว้ในระบบของแอป'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('ยกเลิก'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('ยืนยัน'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await MetaApi.disconnect();
+      if (!mounted) return;
+      setState(() {
+        _connected = false;
+        _accountName = null;
+        _adAccounts = const [];
+      });
+      notice(context, 'ลบการเชื่อมต่อ Meta จาก ADNEXA แล้ว');
+    } catch (error) {
+      if (mounted) {
+        notice(context, error.toString().replaceFirst('Exception: ', ''));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PageBody(children: [
-    const Text('Connect your advertising accounts securely.', style: TextStyle(color: muted, fontSize: 12)),
+    const Text(
+      'Connect your advertising accounts securely.',
+      style: TextStyle(color: muted, fontSize: 12),
+    ),
     const SizedBox(height: 14),
-    for (final p in const [
-      ['Meta Ads', 'Facebook & Instagram campaign accounts', 'Meta'],
-      ['TikTok Ads', 'TikTok for Business advertiser accounts', 'TikTok'],
-    ])
-      CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(p[0], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-        const SizedBox(height: 4),
-        Text(p[1], style: const TextStyle(color: muted, fontSize: 11)),
-        const SizedBox(height: 13),
+    CardPanel(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         Row(children: [
-          const Icon(Icons.link_off, color: muted, size: 16),
-          const SizedBox(width: 6),
-          const Expanded(child: Text('Not connected', style: TextStyle(color: muted, fontSize: 11))),
-          OutlinedButton(onPressed: () => notice(context, 'การเชื่อมต่อ ${p[2]} ต้องตั้งค่า OAuth และ Backend ก่อน'), child: const Text('Connect')),
+          const Icon(Icons.facebook, size: 22),
+          const SizedBox(width: 9),
+          const Expanded(child: Text(
+            'Meta Ads',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          )),
+          if (_connected)
+            const Icon(Icons.check_circle, color: Color(0xFF65C995), size: 19),
         ]),
-      ])),
+        const SizedBox(height: 4),
+        const Text(
+          'Facebook & Instagram advertising accounts',
+          style: TextStyle(color: muted, fontSize: 11),
+        ),
+        const SizedBox(height: 13),
+        if (_loading) const LinearProgressIndicator(minHeight: 2),
+        if (_connected) ...[
+          Row(children: [
+            const Icon(Icons.link, color: Color(0xFF65C995), size: 16),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              _accountName ?? 'Meta account connected',
+              style: const TextStyle(color: Color(0xFF65C995), fontSize: 11),
+            )),
+          ]),
+          const SizedBox(height: 10),
+          if (_adAccounts.isEmpty)
+            const Text(
+              'ยังไม่พบ Ad Account หรือบัญชีนี้ยังไม่มีสิทธิ์อ่านรายการบัญชีโฆษณา',
+              style: TextStyle(color: muted, fontSize: 11),
+            ),
+          ..._adAccounts.map((account) => Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              const Icon(Icons.campaign_outlined, color: muted, size: 16),
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                account['name']?.toString() ?? account['id'].toString(),
+                style: const TextStyle(fontSize: 12),
+              )),
+              Text(
+                account['currency']?.toString() ?? '',
+                style: const TextStyle(color: muted, fontSize: 10),
+              ),
+            ]),
+          )),
+          const SizedBox(height: 12),
+          Row(children: [
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _refresh,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Refresh'),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: _disconnect,
+              child: const Text('Disconnect'),
+            ),
+          ]),
+        ] else ...[
+          const Row(children: [
+            Icon(Icons.link_off, color: muted, size: 16),
+            SizedBox(width: 6),
+            Expanded(child: Text(
+              'Not connected',
+              style: TextStyle(color: muted, fontSize: 11),
+            )),
+          ]),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: _connecting || _loading ? null : _connect,
+            child: Text(_connecting ? 'Opening Meta…' : 'Connect Meta'),
+          ),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          Text(
+            _error!,
+            style: const TextStyle(color: Color(0xFFFF8D8D), fontSize: 11),
+          ),
+        ],
+      ],
+    )),
+    const SizedBox(height: 12),
+    CardPanel(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text('TikTok Ads', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+        SizedBox(height: 4),
+        Text('TikTok for Business advertiser accounts', style: TextStyle(color: muted, fontSize: 11)),
+        SizedBox(height: 10),
+        Text('ยังไม่เปิดการเชื่อมต่อจริง — อยู่ในคิวพัฒนาขั้นถัดไป', style: TextStyle(color: muted, fontSize: 11)),
+      ],
+    )),
     const SizedBox(height: 6),
     const Text('Security principle', style: TextStyle(fontWeight: FontWeight.w700)),
     const SizedBox(height: 7),
-    const Text('ADNEXA จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อจริงจะใช้ OAuth ทางการและจัดเก็บ Token ฝั่งเซิร์ฟเวอร์เท่านั้น', style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
+    const Text(
+      'ADNEXA จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อใช้ OAuth ทางการ และ Token จะถูกเก็บแบบเข้ารหัสบนเซิร์ฟเวอร์เท่านั้น',
+      style: TextStyle(color: muted, fontSize: 12, height: 1.5),
+    ),
   ]);
 }
 
