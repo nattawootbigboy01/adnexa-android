@@ -41,7 +41,7 @@ All endpoints except the OAuth callback and health endpoints require a Firebase 
 - `POST /api/oauth/meta/start` — creates one-time state and returns `authorization_url`.
 - `GET /api/meta/callback` — consumes state, exchanges code server-side, verifies the Meta identity, and encrypts the token at rest.
 - `GET /api/meta/connection` — returns connection status and non-secret account identity.
-- `GET /api/meta/ad-accounts` — read-only list of ad accounts visible to the connected Meta identity.
+- `GET /api/meta/ad-accounts` — read-only list of up to 100 ad accounts per request. If `has_more` is true and `next_cursor` is present, request the next page with `?after=<URL-encoded next_cursor>`. The Worker accepts only the opaque cursor (not a caller-supplied URL) and returns the same account fields for each page.
 - `DELETE /api/meta/connection` — removes the locally stored encrypted token.
 
 The Flutter app must open the returned `authorization_url` in the system browser, then poll `GET /api/meta/connection` after the callback. Access tokens are never returned to the app.
