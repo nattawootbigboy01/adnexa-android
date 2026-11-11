@@ -1,5 +1,5 @@
 const APP_NAME = "ADNEXA API";
-const VERSION = "1.3.0";
+const VERSION = "1.3.1";
 const FIREBASE_PROJECT_ID = "adnexa-8daea";
 const STATE_TTL = 600;
 
@@ -750,6 +750,40 @@ async function handleMetaInsights(request, env) {
     return json({ error: "Stored Meta credential unavailable" }, 503);
   }
 
+  // Verify the permission on the exact stored token; never expose the token or raw Meta error.
+  const permissionsUrl = new URL(
+    "https://graph.facebook.com/" + metaVersion(env) + "/me/permissions"
+  );
+  permissionsUrl.searchParams.set("access_token", accessToken);
+  let adsReadStatus = "unknown";
+  let permissionCheckCode = null;
+  try {
+    const permissionResponse = await fetch(permissionsUrl.toString(), {
+      headers: { "Accept": "application/json" }
+    });
+    const permissionBody = await permissionResponse.json().catch(() => ({}));
+    if (permissionResponse.ok && Array.isArray(permissionBody.data)) {
+      const adsRead = permissionBody.data.find(item => item && item.permission === "ads_read");
+      adsReadStatus = adsRead && typeof adsRead.status === "string"
+        ? adsRead.status
+        : "not_returned";
+    } else {
+      permissionCheckCode = Number(permissionBody && permissionBody.error && permissionBody.error.code) || null;
+    }
+  } catch {
+    adsReadStatus = "check_unavailable";
+  }
+
+  if (adsReadStatus === "declined" || adsReadStatus === "not_returned") {
+    return json({
+      provider: "meta",
+      error: "Meta token does not have granted ads_read permission",
+      diagnostic_code: "ADS_READ_NOT_GRANTED",
+      ads_read_status: adsReadStatus,
+      reauthorization_required: true
+    }, 403);
+  }
+
   const endpoint = new URL(
     "https://graph.facebook.com/" + metaVersion(env) + "/act_" + accountId + "/insights"
   );
@@ -773,9 +807,16 @@ async function handleMetaInsights(request, env) {
       response.status === 401 || metaErrorCode === 190;
     const permissionDenied = metaErrorCode === 10 || metaErrorCode === 200;
     return json({
+      provider: "meta",
       error: permissionDenied
         ? "Meta permission does not allow Insights access"
         : "Unable to retrieve Meta Insights",
+      diagnostic_code: permissionDenied
+        ? "META_INSIGHTS_PERMISSION_DENIED"
+        : reauthorizationRequired ? "META_TOKEN_INVALID" : "META_INSIGHTS_REQUEST_FAILED",
+      ads_read_status: adsReadStatus,
+      permission_check_code: permissionCheckCode,
+      meta_error_code: Number.isFinite(metaErrorCode) ? metaErrorCode : null,
       reauthorization_required: reauthorizationRequired
     }, reauthorizationRequired ? 401 : permissionDenied ? 403 : 502);
   }
@@ -785,6 +826,11 @@ async function handleMetaInsights(request, env) {
     provider: "meta",
     level: "account",
     date_preset: datePreset,
+    data_available: !!row,
+    diagnostic_code: row ? "INSIGHTS_AVAILABLE" : "NO_INSIGHTS_IN_SELECTED_PERIOD",
+    message: row ? null : "Meta returned no Insights rows for this ad account and date range.",
+    ads_read_status: adsReadStatus,
+    permission_check_code: permissionCheckCode,
     insights: row ? {
       account_id: row.account_id || accountId,
       account_name: row.account_name || null,
