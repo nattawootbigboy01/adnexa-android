@@ -194,7 +194,7 @@ async function handleAdminOverview(request, env) {
 
 async function handleAdminConnections(request, env) {
   let adminUid;
-  try { adminUid = await authenticateAdmin(request); }
+  try { adminUid = await authenticateAdmin(request, env); }
   catch (error) {
     const forbidden = error.message === "Administrator access required";
     return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
@@ -218,7 +218,7 @@ async function handleAdminConnections(request, env) {
 
 async function handleAdminAudit(request, env) {
   let adminUid;
-  try { adminUid = await authenticateAdmin(request); }
+  try { adminUid = await authenticateAdmin(request, env); }
   catch (error) {
     const forbidden = error.message === "Administrator access required";
     return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
