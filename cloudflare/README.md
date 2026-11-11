@@ -46,7 +46,20 @@ All endpoints except the OAuth callback and health endpoints require a Firebase 
 - `DELETE /api/meta/connection` — removes the locally stored encrypted token.
 - `GET /api/admin/overview` — administrator-only, read-only connection counts. Requires a verified Firebase custom claim `admin: true` or `role: "admin"`.
 - `GET /api/admin/connections` — administrator-only list of Meta connection metadata (UID and Meta account identity only; no tokens).
-- `GET /api/admin/audit` — administrator-only recent admin access events. These routes do not grant admin roles; claims must be assigned through a trusted Firebase Admin SDK environment. The current admin console is read-only and does not manage users, roles, campaigns, or ad spend.
+- `GET /api/admin/audit` — administrator-only recent admin access events.
+- `POST /api/member/sync` — called by the customer app after a verified user signs in. It records only that user's UID, verified email, display name, and last-seen timestamp in D1. It cannot write another user's profile.
+- `GET /api/admin/access` — returns the caller's server-verified D1 role and capabilities.
+- `GET /api/admin/members?limit=50&search=<text>` — administrator-only member directory (maximum 100 rows per request).
+- `GET /api/admin/roles` — administrator-only role assignments.
+- `PUT /api/admin/members/<uid>/role` — super-administrator-only role update. Allowed values are `customer`, `support`, and `admin`. The `super_admin` role cannot be granted or changed through this endpoint, and an administrator cannot change their own role.
+
+### Member directory and role controls
+
+The member directory is populated when a verified customer signs in with a version of the app that includes the profile-sync call. Existing customers appear after their next successful sign-in; this is not an immediate full export of Firebase Authentication users.
+
+The existing Firebase custom claim `admin: true` is bootstrapped as the initial `super_admin` in the D1 `admin_roles` table. After bootstrap, D1 is the server-side source of truth for console roles. Roles are `super_admin`, `admin`, and `support`; ordinary customers have no row and are treated as `customer`. Only a super administrator can grant or revoke `admin` and `support` roles. Role changes are written to the admin audit log and a detail table.
+
+This release does not disable Firebase Authentication accounts, suspend sign-in, delete accounts, or alter Firebase custom claims for other users. Those actions require a separately reviewed Firebase Admin SDK integration. It also does not create, edit, pause, publish, or spend on campaigns. Keep the existing D1 binding `DB` pointed at `adnexa-auth-db`; no new secret or paid service is required.
 
 The Flutter app must open the returned `authorization_url` in the system browser, then poll `GET /api/meta/connection` after the callback. Access tokens are never returned to the app.
 
