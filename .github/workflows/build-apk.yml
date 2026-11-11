@@ -1,6 +1,9 @@
 name: Build ADNEXA APK
 
 on:
+  push:
+    branches:
+      - feature/admin-member-management-20261111
   workflow_dispatch:
 
 permissions:
