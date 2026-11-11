@@ -1,5 +1,5 @@
 const APP_NAME = "ADNEXA API";
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 const FIREBASE_PROJECT_ID = "adnexa-8daea";
 const STATE_TTL = 600;
 
@@ -126,6 +126,9 @@ async function authenticateAdmin(request, env, allowedRoles = ["super_admin", "a
   const match = authorization.match(/^Bearer (.+)$/);
   if (!match) throw new Error("Missing authentication");
   const claims = await verifyFirebaseToken(match[1], true);
+  if (claims.email_verified !== true) {
+    throw new Error("Administrator email verification required");
+  }
   await ensureAdminTables(env);
   const uid = claims.sub;
   const now = Math.floor(Date.now() / 1000);
@@ -225,11 +228,15 @@ async function handleAdminAudit(request, env) {
   }
 
   await ensureAdminAuditTable(env);
+  await ensureAdminTables(env);
   const rows = await env.DB.prepare(
     "SELECT admin_uid, action, created_at FROM admin_audit_log ORDER BY created_at DESC LIMIT 50"
   ).all();
+  const details = await env.DB.prepare(
+    "SELECT admin_uid, action, target_uid, details, created_at FROM admin_audit_details ORDER BY created_at DESC LIMIT 50"
+  ).all();
   await recordAdminAction(env, adminUid, "view_audit_log");
-  return json({ events: rows.results || [] });
+  return json({ events: rows.results || [], details: details.results || [] });
 }
 
 async function handleMemberSync(request, env) {
