@@ -6,7 +6,7 @@ Flutter Android app for Meta advertising insights and campaign planning. The cur
 
 - **Dashboard and Insights:** account-level Meta Ads reporting through the ADNEXA Cloudflare Worker. Read-only; requires a connected Meta test/business account and approved `ads_read` permission.
 - **Account Center:** official Meta OAuth connection. The Worker stores the access token encrypted at rest; the app does not receive the token.
-- **Campaign Studio:** local planning and draft storage only. No campaign create, edit, pause, publish, or spend endpoint is implemented.
+- **Campaign Studio:** local planning and draft storage only. The budget panel shows a clearly labelled, assumption-based reach range (planning CPM ฿30–฿100 and frequency 1.2–2.0); it is not a Meta forecast or a guarantee. Real results are shown separately from Meta Insights. No campaign create, edit, pause, publish, or spend endpoint is implemented.
 - **Planner:** offline rule-based planning helper. It is not connected to a hosted AI model and does not fabricate reach/click forecasts.
 - **Admin Control Center:** read-only system overview, Meta connection metadata, and admin audit events. It is visible only to Firebase users with the trusted custom claim `admin: true` or `role: "admin"`; the Worker independently verifies the same claim. There is no self-service admin promotion or role-management UI.
 
