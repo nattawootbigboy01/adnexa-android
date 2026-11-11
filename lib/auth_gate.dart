@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 const _apiKey = String.fromEnvironment('FIREBASE_API_KEY');
 const _appId = String.fromEnvironment('FIREBASE_APP_ID');
@@ -166,10 +167,29 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
         await FirebaseAuth.instance.setLanguageCode('th');
         await credential.user?.sendEmailVerification();
       } else {
-        await FirebaseAuth.instance.signInWithEmailAndPassword(
+        final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(
           email: email,
           password: _password.text,
         );
+        // Register only verified accounts in the server-side member directory.
+        try {
+          final signedInUser = credential.user;
+          if (signedInUser != null) {
+            await signedInUser.reload();
+            final refreshedUser = FirebaseAuth.instance.currentUser;
+            if (refreshedUser != null && refreshedUser.emailVerified) {
+              final token = await refreshedUser.getIdToken(true);
+              if (token != null && token.isNotEmpty) {
+                await http.post(
+                  Uri.parse('https://adnexa-api.nattawootbigboy01.workers.dev/api/member/sync'),
+                  headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+                ).timeout(const Duration(seconds: 8));
+              }
+            }
+          }
+        } catch (_) {
+          // Member sync is best-effort and must never block customer sign-in.
+        }
       }
     } on FirebaseAuthException catch (error) {
       if (mounted) setState(() {
