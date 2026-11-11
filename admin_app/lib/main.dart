@@ -126,9 +126,14 @@ class _AdminAccessGateState extends State<AdminAccessGate> {
   Future<bool> checkAccess() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || !user.emailVerified) return false;
-    final result = await user.getIdTokenResult(true);
-    final claims = result.claims ?? const <String, dynamic>{};
-    return claims['admin'] == true || claims['role'] == 'admin';
+    try {
+      // The Worker checks the current server-side role registry. This supports
+      // admins granted through the protected D1 role manager, not just claims.
+      await AdminApi.get('/api/admin/access');
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
   @override
   Widget build(BuildContext context) => FutureBuilder<bool>(future: access, builder: (context, snap) {
