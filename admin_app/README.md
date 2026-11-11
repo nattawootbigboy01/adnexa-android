@@ -5,9 +5,9 @@ A separate Flutter Android app for trusted ADNEXA administrators.
 ## First release
 - Separate application from customer-facing ADNEXA ADS.
 - Email/password sign-in only; no public registration.
-- Requires verified email and Firebase custom claim `admin: true` or `role: "admin"`.
+- Requires verified email and a server-approved role in the Worker role registry. The initial trusted Firebase claim `admin: true` bootstraps the first super administrator.
 - Reads existing Worker endpoints: `/api/admin/overview`, `/api/admin/connections`, and `/api/admin/audit`.
-- Server independently verifies the Firebase ID token and admin claim.
+- Server independently verifies the Firebase ID token, verified email, and current D1 role.
 - Read-only overview, Meta connection metadata, and recent admin audit events.
 - Member directory populated by verified customer sign-ins through the Worker profile-sync endpoint.
 - Server-verified role levels: super administrator, administrator, support, and customer.
