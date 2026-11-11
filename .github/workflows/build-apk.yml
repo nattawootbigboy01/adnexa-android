@@ -2,6 +2,11 @@ name: Build ADNEXA APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/meta-oauth-backend-20261110
+    paths:
+      - lib/main.dart
 
 permissions:
   contents: read
