@@ -16,4 +16,4 @@ Uses existing project `adnexa-8daea` and the repository Actions variables: `FIRE
 Register a separate Android app in Firebase project `adnexa-8daea` with package name `com.adnexa.admin`. Store its Firebase App ID as the GitHub Actions repository variable `ADMIN_FIREBASE_APP_ID`. The shared API key, sender ID, and project ID continue to use the existing repository variables. The admin APK can compile before registration, but Firebase sign-in will remain unavailable until this App ID is configured. Never include service-account credentials in the mobile app or repository.
 
 ## Build
-Run `flutter pub get`, `flutter analyze`, `flutter test`, `flutter create . --platforms=android --project-name adnexa_admin`, then `flutter build apk --release` from this directory.
+Run `flutter pub get`, `flutter analyze`, `flutter test`, `flutter create . --platforms=android --org com.adnexa --project-name admin`, then `flutter build apk --release` from this directory.
