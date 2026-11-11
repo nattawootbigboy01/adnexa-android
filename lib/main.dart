@@ -438,6 +438,23 @@ class _CampaignPageState extends State<CampaignPage> {
   String get objectiveDescription =>
       objectiveDescriptions[objective] ?? 'เลือกวัตถุประสงค์ให้ตรงกับผลลัพธ์ที่ต้องการ';
 
+  String _formatPeople(int value) => value.toString().replaceAllMapped(
+        RegExp(r'(\\d)(?=(\\d{3})+(?!\\d))'),
+        (match) => '${match[1]},',
+      );
+
+  // Planning assumptions only: CPM ฿30–฿100 and frequency 1.2–2.0.
+  // This is deliberately separate from measured Meta Insights.
+  String get reachEstimate {
+    final dailyBudget = double.tryParse(budget.text.trim());
+    if (dailyBudget == null || dailyBudget <= 0) {
+      return 'กรุณากรอกงบประมาณต่อวันเพื่อดูประมาณการ';
+    }
+    final totalBudget = dailyBudget * durationDays;
+    final lowerReach = (totalBudget * 1000 / (100 * 2)).floor();
+    final upperReach = (totalBudget * 1000 / (30 * 1.2)).round();
+    return 'ประมาณ ${_formatPeople(lowerReach)}–${_formatPeople(upperReach)} คน';
+  }
 
   @override
   void initState() {
@@ -564,7 +581,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 7),
     Align(alignment: Alignment.centerLeft, child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9), decoration: BoxDecoration(color: const Color(0xFF14263D), borderRadius: BorderRadius.circular(12)), child: const Text('●  Meta Ads', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)))),
     const SizedBox(height: 15),
-    const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('ชื่อแคมเปญ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
     TextField(controller: name, decoration: const InputDecoration(hintText: 'ใส่ชื่อสินค้าที่ต้องการโฆษณา')),
     const SizedBox(height: 15),
@@ -687,6 +704,21 @@ class _CampaignPageState extends State<CampaignPage> {
         );
       }).toList(),
     ),
+    const SizedBox(height: 12),
+    CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Icon(Icons.insights_rounded, color: Color(0xFF78B8FF), size: 19),
+        const SizedBox(width: 8),
+        const Expanded(child: Text('ประมาณการการเข้าถึงเบื้องต้น', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700))),
+        const Chip(label: Text('เพื่อวางแผน')),
+      ]),
+      const SizedBox(height: 7),
+      Text(reachEstimate, style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: Color(0xFF8CC7FF))),
+      const SizedBox(height: 5),
+      const Text('คำนวณจากสมมติฐาน CPM ฿30–฿100 และความถี่ 1.2–2.0 โดยใช้งบรวมตามจำนวนวันที่เลือก', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
+      const SizedBox(height: 4),
+      const Text('ไม่ใช่ผลคาดการณ์จาก Meta และไม่รับประกันผลจริง ผลจริงขึ้นกับกลุ่มเป้าหมาย เนื้อหา การแข่งขัน และการประมูลโฆษณา', style: TextStyle(fontSize: 10, color: muted, height: 1.45)),
+    ])),
     const SizedBox(height: 12),
     CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('ผลลัพธ์จากแพลตฟอร์ม', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
