@@ -51,4 +51,29 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('Campaign Studio shows a clearly labelled planning-only reach range', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(430, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: CampaignPage())),
+    );
+    await tester.pumpAndSettle();
+
+    final budgetField = find.byWidgetPredicate(
+      (widget) => widget is TextField && widget.decoration?.hintText == '300',
+    );
+    expect(budgetField, findsOneWidget);
+    await tester.enterText(budgetField, '300');
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('ประมาณ 10,500–58,333 คน'), findsOneWidget);
+    expect(find.textContaining('CPM ฿30–฿100'), findsOneWidget);
+    expect(find.textContaining('ไม่ใช่ผลคาดการณ์จาก Meta'), findsOneWidget);
+  });
+
 }
