@@ -102,15 +102,51 @@ async function authenticate(request) {
   return verifyFirebaseToken(match[1]);
 }
 
-async function authenticateAdmin(request) {
+async function ensureAdminTables(env) {
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS member_directory (uid TEXT PRIMARY KEY, email TEXT, display_name TEXT, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, last_seen_at INTEGER NOT NULL)"
+  ).run();
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS admin_roles (uid TEXT PRIMARY KEY, role TEXT NOT NULL CHECK(role IN ('super_admin','admin','support')), granted_by TEXT NOT NULL, granted_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)"
+  ).run();
+  await env.DB.prepare(
+    "CREATE TABLE IF NOT EXISTS admin_audit_details (id INTEGER PRIMARY KEY AUTOINCREMENT, admin_uid TEXT NOT NULL, action TEXT NOT NULL, target_uid TEXT, details TEXT, created_at INTEGER NOT NULL)"
+  ).run();
+}
+
+async function getStoredAdminRole(env, uid) {
+  const row = await env.DB.prepare(
+    "SELECT role FROM admin_roles WHERE uid = ? LIMIT 1"
+  ).bind(uid).first();
+  return row && typeof row.role === "string" ? row.role : null;
+}
+
+async function authenticateAdmin(request, env, allowedRoles = ["super_admin", "admin", "support"]) {
   const authorization = request.headers.get("Authorization") || "";
   const match = authorization.match(/^Bearer (.+)$/);
   if (!match) throw new Error("Missing authentication");
   const claims = await verifyFirebaseToken(match[1], true);
-  if (claims.admin !== true && claims.role !== "admin") {
+  await ensureAdminTables(env);
+  const uid = claims.sub;
+  const now = Math.floor(Date.now() / 1000);
+
+  // Bootstrap only the already-trusted Firebase admin claim. Existing D1 roles
+  // remain authoritative after the first bootstrap.
+  if (claims.admin === true) {
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO admin_roles (uid, role, granted_by, granted_at, updated_at) VALUES (?, 'super_admin', ?, ?, ?)"
+    ).bind(uid, uid, now, now).run();
+  } else if (claims.role === "admin") {
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO admin_roles (uid, role, granted_by, granted_at, updated_at) VALUES (?, 'admin', ?, ?, ?)"
+    ).bind(uid, uid, now, now).run();
+  }
+
+  const role = await getStoredAdminRole(env, uid);
+  if (!role || !allowedRoles.includes(role)) {
     throw new Error("Administrator access required");
   }
-  return claims.sub;
+  return uid;
 }
 
 async function ensureAdminAuditTable(env) {
@@ -128,7 +164,7 @@ async function recordAdminAction(env, adminUid, action) {
 
 async function handleAdminOverview(request, env) {
   let adminUid;
-  try { adminUid = await authenticateAdmin(request); }
+  try { adminUid = await authenticateAdmin(request, env); }
   catch (error) {
     const forbidden = error.message === "Administrator access required";
     return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
@@ -193,6 +229,118 @@ async function handleAdminAudit(request, env) {
   ).all();
   await recordAdminAction(env, adminUid, "view_audit_log");
   return json({ events: rows.results || [] });
+}
+
+async function handleMemberSync(request, env) {
+  let claims;
+  try {
+    const authorization = request.headers.get("Authorization") || "";
+    const match = authorization.match(/^Bearer (.+)$/);
+    if (!match) return json({ error: "Unauthorized" }, 401);
+    claims = await verifyFirebaseToken(match[1], true);
+  } catch {
+    return json({ error: "Unauthorized" }, 401);
+  }
+
+  if (claims.email_verified !== true || typeof claims.email !== "string" || !claims.email.includes("@")) {
+    return json({ error: "Verified email required" }, 403);
+  }
+  await ensureAdminTables(env);
+  const now = Math.floor(Date.now() / 1000);
+  const uid = claims.sub;
+  const email = claims.email.trim().toLowerCase().slice(0, 254);
+  const displayName = typeof claims.name === "string" ? claims.name.trim().slice(0, 120) : null;
+  await env.DB.prepare(
+    "INSERT INTO member_directory (uid, email, display_name, created_at, updated_at, last_seen_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET email = excluded.email, display_name = COALESCE(excluded.display_name, member_directory.display_name), updated_at = excluded.updated_at, last_seen_at = excluded.last_seen_at"
+  ).bind(uid, email, displayName, now, now, now).run();
+  return json({ status: "synced" });
+}
+
+async function handleAdminMembers(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request, env); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+  await ensureAdminTables(env);
+  const url = new URL(request.url);
+  const rawSearch = (url.searchParams.get("search") || "").trim().slice(0, 100);
+  const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+  const role = await getStoredAdminRole(env, adminUid);
+  const rows = rawSearch
+    ? await env.DB.prepare(
+        "SELECT m.uid, m.email, m.display_name, m.created_at, m.updated_at, m.last_seen_at, COALESCE(r.role, 'customer') AS role FROM member_directory m LEFT JOIN admin_roles r ON r.uid = m.uid WHERE m.email LIKE ? OR m.display_name LIKE ? OR m.uid LIKE ? ORDER BY m.last_seen_at DESC LIMIT ?"
+      ).bind("%" + rawSearch + "%", "%" + rawSearch + "%", "%" + rawSearch + "%", limit).all()
+    : await env.DB.prepare(
+        "SELECT m.uid, m.email, m.display_name, m.created_at, m.updated_at, m.last_seen_at, COALESCE(r.role, 'customer') AS role FROM member_directory m LEFT JOIN admin_roles r ON r.uid = m.uid ORDER BY m.last_seen_at DESC LIMIT ?"
+      ).bind(limit).all();
+  await recordAdminAction(env, adminUid, "view_member_directory");
+  return json({
+    members: rows.results || [],
+    current_role: role,
+    can_manage_roles: role === "super_admin",
+    limit
+  });
+}
+
+async function handleAdminRoleUpdate(request, env, targetUid) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request, env, ["super_admin"]); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+
+  if (!targetUid || targetUid.length > 128 || targetUid === adminUid) {
+    return json({ error: "Invalid target account" }, 400);
+  }
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+  const role = body && body.role;
+  if (!["customer", "admin", "support"].includes(role)) {
+    return json({ error: "Role must be customer, admin, or support" }, 400);
+  }
+
+  await ensureAdminTables(env);
+  const member = await env.DB.prepare(
+    "SELECT uid FROM member_directory WHERE uid = ? LIMIT 1"
+  ).bind(targetUid).first();
+  if (!member) return json({ error: "Member not found; the user must sign in to ADNEXA first" }, 404);
+
+  const existing = await getStoredAdminRole(env, targetUid);
+  if (existing === "super_admin") {
+    return json({ error: "Super administrator role cannot be changed here" }, 403);
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (role === "customer") {
+    await env.DB.prepare("DELETE FROM admin_roles WHERE uid = ? AND role != 'super_admin'")
+      .bind(targetUid).run();
+  } else {
+    await env.DB.prepare(
+      "INSERT INTO admin_roles (uid, role, granted_by, granted_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET role = excluded.role, granted_by = excluded.granted_by, updated_at = excluded.updated_at"
+    ).bind(targetUid, role, adminUid, now, now).run();
+  }
+  await env.DB.prepare(
+    "INSERT INTO admin_audit_details (admin_uid, action, target_uid, details, created_at) VALUES (?, ?, ?, ?, ?)"
+  ).bind(adminUid, "change_member_role", targetUid, JSON.stringify({ role: role }), now).run();
+  await recordAdminAction(env, adminUid, "change_member_role");
+  return json({ status: "updated", uid: targetUid, role: role });
+}
+
+async function handleAdminRoles(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request, env); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+  await ensureAdminTables(env);
+  const rows = await env.DB.prepare(
+    "SELECT r.uid, m.email, m.display_name, r.role, r.granted_by, r.granted_at, r.updated_at FROM admin_roles r LEFT JOIN member_directory m ON m.uid = r.uid ORDER BY CASE r.role WHEN 'super_admin' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, r.updated_at DESC"
+  ).all();
+  await recordAdminAction(env, adminUid, "view_admin_roles");
+  return json({ roles: rows.results || [] });
 }
 
 async function createState(env, provider, userId) {
@@ -698,6 +846,20 @@ export default {
       }
       if (method === "GET" && path === "/api/admin/audit") {
         return await handleAdminAudit(request, env);
+      }
+
+      if (method === "POST" && path === "/api/member/sync") {
+        return await handleMemberSync(request, env);
+      }
+      if (method === "GET" && path === "/api/admin/members") {
+        return await handleAdminMembers(request, env);
+      }
+      if (method === "GET" && path === "/api/admin/roles") {
+        return await handleAdminRoles(request, env);
+      }
+      const adminRoleMatch = path.match(/^\\/api\\/admin\\/members\\/([^/]+)\\/role$/);
+      if (method === "PUT" && adminRoleMatch) {
+        return await handleAdminRoleUpdate(request, env, decodeURIComponent(adminRoleMatch[1]));
       }
 
       if (method === "GET" && path === "/api/meta/connection") {
