@@ -256,6 +256,27 @@ async function handleMemberSync(request, env) {
   return json({ status: "synced" });
 }
 
+async function handleAdminAccess(request, env) {
+  let adminUid;
+  try { adminUid = await authenticateAdmin(request, env); }
+  catch (error) {
+    const forbidden = error.message === "Administrator access required";
+    return json({ error: forbidden ? "Forbidden" : "Unauthorized" }, forbidden ? 403 : 401);
+  }
+  const role = await getStoredAdminRole(env, adminUid);
+  await recordAdminAction(env, adminUid, "check_admin_access");
+  return json({
+    uid: adminUid,
+    role: role,
+    capabilities: {
+      view_members: ["super_admin", "admin", "support"].includes(role),
+      manage_roles: role === "super_admin",
+      campaign_controls: false,
+      ad_spend_controls: false
+    }
+  });
+}
+
 async function handleAdminMembers(request, env) {
   let adminUid;
   try { adminUid = await authenticateAdmin(request, env); }
@@ -851,13 +872,16 @@ export default {
       if (method === "POST" && path === "/api/member/sync") {
         return await handleMemberSync(request, env);
       }
+      if (method === "GET" && path === "/api/admin/access") {
+        return await handleAdminAccess(request, env);
+      }
       if (method === "GET" && path === "/api/admin/members") {
         return await handleAdminMembers(request, env);
       }
       if (method === "GET" && path === "/api/admin/roles") {
         return await handleAdminRoles(request, env);
       }
-      const adminRoleMatch = path.match(/^\\/api\\/admin\\/members\\/([^/]+)\\/role$/);
+      const adminRoleMatch = path.match(/^\/api\/admin\/members\/([^/]+)\/role$/);
       if (method === "PUT" && adminRoleMatch) {
         return await handleAdminRoleUpdate(request, env, decodeURIComponent(adminRoleMatch[1]));
       }
