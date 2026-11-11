@@ -8,6 +8,20 @@ const _appId = String.fromEnvironment('FIREBASE_APP_ID');
 const _senderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID');
 const _projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
 
+Future<void> _syncVerifiedMember(User? user) async {
+  if (user == null || !user.emailVerified) return;
+  try {
+    final token = await user.getIdToken(true);
+    if (token == null || token.isEmpty) return;
+    await http.post(
+      Uri.parse('https://adnexa-api.nattawootbigboy01.workers.dev/api/member/sync'),
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    ).timeout(const Duration(seconds: 8));
+  } catch (_) {
+    // Member sync is best-effort and never blocks sign-in or email verification.
+  }
+}
+
 class AuthGate extends StatefulWidget {
   final Widget child;
   const AuthGate({super.key, required this.child});
@@ -413,6 +427,7 @@ class _VerifyEmailPageState extends State<VerifyEmailPage> {
       await FirebaseAuth.instance.currentUser?.reload();
       final user = FirebaseAuth.instance.currentUser;
       if (user?.emailVerified == true) {
+        await _syncVerifiedMember(user);
         // authStateChanges will rebuild the gate after the user reloads.
         if (mounted) setState(() {});
       } else if (mounted) {
