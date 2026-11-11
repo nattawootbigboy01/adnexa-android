@@ -44,8 +44,8 @@ All endpoints except the OAuth callback and health endpoints require a Firebase 
 - `GET /api/meta/ad-accounts` — read-only list of up to 100 ad accounts per request. If `has_more` is true and `next_cursor` is present, request the next page with `?after=<URL-encoded next_cursor>`. The Worker accepts only the opaque cursor (not a caller-supplied URL) and returns the same account fields for each page.
 - `GET /api/meta/insights?ad_account_id=<numeric-id>&date_preset=last_7d` — read-only account-level performance summary. Supported presets: `yesterday`, `last_7d`, `last_14d`, `last_30d`, `last_90d`, `this_month`, and `last_month`. Returns spend, impressions, reach, clicks, CTR, CPC, CPM, frequency, currency, and reporting dates. Requires the connected user to have the necessary approved read permission (normally `ads_read`).
 - `DELETE /api/meta/connection` — removes the locally stored encrypted token.
-- `GET /api/admin/overview` — administrator-only, read-only connection counts. Requires a verified Firebase custom claim `admin: true` or `role: "admin"`.
-- `GET /api/admin/connections` — administrator-only list of Meta connection metadata (UID and Meta account identity only; no tokens).
+- `GET /api/admin/overview` — administrator-only, read-only connection counts and current D1 role capabilities. Requires a verified Firebase ID token and a role accepted by the server-side D1 registry. The initial trusted Firebase custom claim `admin: true` bootstraps the first `super_admin`.
+- `GET /api/admin/connections` — administrator-only list of Meta connection metadata (UID and Meta account identity only; no tokens). Requires a verified email and a server-approved D1 role.
 - `GET /api/admin/audit` — administrator-only recent admin access events.
 - `POST /api/member/sync` — called by the customer app after a verified user signs in. It records only that user's UID, verified email, display name, and last-seen timestamp in D1. It cannot write another user's profile.
 - `GET /api/admin/access` — returns the caller's server-verified D1 role and capabilities.
