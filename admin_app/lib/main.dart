@@ -155,6 +155,24 @@ class AdminApi {
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(response.statusCode == 403 ? 'เซิร์ฟเวอร์ปฏิเสธสิทธิ์ผู้ดูแล' : decoded['error']?.toString() ?? 'โหลดข้อมูลไม่สำเร็จ');
     return decoded;
   }
+  static Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception('กรุณาเข้าสู่ระบบใหม่');
+    final token = await user.getIdToken();
+    if (token == null || token.isEmpty) throw Exception('ยืนยันตัวตนไม่สำเร็จ');
+    final response = await http.put(
+      Uri.parse(apiBase + path),
+      headers: {'Authorization': 'Bearer ' + token, 'Accept': 'application/json', 'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    ).timeout(const Duration(seconds: 20));
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map<String, dynamic>) throw Exception('รูปแบบข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง');
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(response.statusCode == 403 ? 'ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้' : decoded['error']?.toString() ?? 'บันทึกไม่สำเร็จ');
+    }
+    return decoded;
+  }
+
   static Future<List<Map<String, dynamic>>> list(String path, String key) async {
     final value = (await get(path))[key];
     if (value is! List) return const [];
@@ -203,6 +221,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final metrics = overview['metrics'] is Map ? Map<String, dynamic>.from(overview['metrics']) : <String, dynamic>{};
     return Scaffold(
       appBar: AppBar(backgroundColor: bg, title: const BrandHeader(), actions: [
+        IconButton(tooltip: 'จัดการสมาชิก', onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MemberManagementPage())), icon: const Icon(Icons.manage_accounts_outlined)),
         IconButton(tooltip: 'รีเฟรชข้อมูล', onPressed: loading ? null : load, icon: const Icon(Icons.refresh_rounded)),
         IconButton(tooltip: 'ออกจากระบบ', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout_rounded)),
       ]),
@@ -236,6 +255,154 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           const Panel(child: Text('รุ่นแรกนี้อ่านได้เฉพาะภาพรวม การเชื่อมต่อ Meta และ Audit Log เท่านั้น ยังไม่มีการค้นหาหรือแก้ไขบัญชีลูกค้า เปลี่ยนสิทธิ์ ระงับบัญชี สร้างแคมเปญ หรือใช้งบโฆษณา การกำหนดสิทธิ์ Admin ต้องทำผ่านช่องทาง Firebase Admin ที่เชื่อถือได้', style: TextStyle(color: muted, height: 1.55, fontSize: 11))),
         ],
       ])),
+    );
+  }
+}
+
+class MemberManagementPage extends StatefulWidget {
+  const MemberManagementPage({super.key});
+  @override
+  State<MemberManagementPage> createState() => _MemberManagementPageState();
+}
+
+class _MemberManagementPageState extends State<MemberManagementPage> {
+  final search = TextEditingController();
+  bool loading = true, saving = false, canManageRoles = false;
+  String? error;
+  List<Map<String, dynamic>> members = const [];
+
+  @override
+  void initState() { super.initState(); load(); }
+  @override
+  void dispose() { search.dispose(); super.dispose(); }
+
+  Future<void> load() async {
+    setState(() { loading = true; error = null; });
+    try {
+      final query = Uri.encodeQueryComponent(search.text.trim());
+      final result = await AdminApi.get('/api/admin/members?limit=100' + (query.isEmpty ? '' : '&search=' + query));
+      if (!mounted) return;
+      setState(() {
+        members = (result['members'] as List? ?? const [])
+          .whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList();
+        canManageRoles = result['can_manage_roles'] == true;
+      });
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> changeRole(Map<String, dynamic> member, String role) async {
+    final uid = member['uid']?.toString() ?? '';
+    final email = member['email']?.toString() ?? uid;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ยืนยันการเปลี่ยนสิทธิ์'),
+        content: Text('ต้องการกำหนดสิทธิ์ $role ให้ $email ใช่หรือไม่?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('ยกเลิก')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('ยืนยัน')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() { saving = true; error = null; });
+    try {
+      await AdminApi.put('/api/admin/members/' + Uri.encodeComponent(uid) + '/role', {'role': role});
+      await load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('บันทึกสิทธิ์เรียบร้อย')));
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  String roleLabel(String role) {
+    switch (role) {
+      case 'super_admin': return 'ผู้ดูแลสูงสุด';
+      case 'admin': return 'ผู้ดูแลระบบ';
+      case 'support': return 'ฝ่ายสนับสนุน';
+      default: return 'ลูกค้าทั่วไป';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    return Scaffold(
+      appBar: AppBar(title: const Text('จัดการสมาชิก'), actions: [
+        IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.refresh)),
+      ]),
+      body: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(children: [
+            Expanded(child: TextField(
+              controller: search,
+              onSubmitted: (_) => load(),
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'ค้นหาอีเมลหรือ UID'),
+            )),
+            const SizedBox(width: 8),
+            IconButton(onPressed: loading ? null : load, icon: const Icon(Icons.search, color: blue)),
+          ]),
+        ),
+        if (saving) const LinearProgressIndicator(minHeight: 2),
+        if (error != null) Padding(padding: const EdgeInsets.all(12), child: Text(error!, style: const TextStyle(color: Colors.orangeAccent))),
+        Expanded(child: loading
+          ? const Center(child: CircularProgressIndicator())
+          : members.isEmpty
+            ? const Center(child: Text('ยังไม่มีสมาชิกในทะเบียน\nสมาชิกจะปรากฏเมื่อเข้าสู่ระบบ ADNEXA หลังยืนยันอีเมล', textAlign: TextAlign.center, style: TextStyle(color: muted)))
+            : RefreshIndicator(
+                onRefresh: load,
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: members.length,
+                  itemBuilder: (context, index) {
+                    final member = members[index];
+                    final uid = member['uid']?.toString() ?? '';
+                    final role = member['role']?.toString() ?? 'customer';
+                    final email = member['email']?.toString() ?? 'ไม่พบอีเมล';
+                    final canEdit = canManageRoles && uid != currentUid && role != 'super_admin';
+                    return Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        const Icon(Icons.account_circle_outlined, color: blue, size: 25),
+                        const SizedBox(width: 9),
+                        Expanded(child: Text(email, style: const TextStyle(fontWeight: FontWeight.w800))),
+                        if (canEdit) PopupMenuButton<String>(
+                          enabled: !saving,
+                          tooltip: 'เปลี่ยนสิทธิ์',
+                          onSelected: (value) => changeRole(member, value),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'customer', child: Text('ลูกค้าทั่วไป')),
+                            PopupMenuItem(value: 'support', child: Text('ฝ่ายสนับสนุน')),
+                            PopupMenuItem(value: 'admin', child: Text('ผู้ดูแลระบบ')),
+                          ],
+                        ),
+                      ]),
+                      const SizedBox(height: 7),
+                      Text(roleLabel(role), style: const TextStyle(color: blue, fontSize: 11, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text('UID: ' + uid, style: const TextStyle(color: muted, fontSize: 9)),
+                      Text('เข้าใช้ล่าสุด: ' + (member['last_seen_at']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 9)),
+                    ]));
+                  },
+                ),
+              )),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          child: Text(
+            canManageRoles
+              ? 'ผู้ดูแลสูงสุดเท่านั้นที่เปลี่ยนบทบาทได้ • ไม่มีการระงับหรือลบบัญชีในรุ่นนี้'
+              : 'ดูรายชื่อสมาชิกได้ • ต้องให้ผู้ดูแลสูงสุดเป็นผู้เปลี่ยนบทบาท',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: muted, fontSize: 10),
+          ),
+        ),
+      ]),
     );
   }
 }
