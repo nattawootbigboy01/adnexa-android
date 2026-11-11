@@ -55,16 +55,18 @@ jobs:
         run: flutter analyze --no-fatal-infos
       - name: Run widget and unit tests
         run: flutter test
-      - name: Build release APK
+      # Debug APKs are automatically signed with Android's standard debug key.
+      # This is for local installation/testing only, not store distribution.
+      - name: Build debug APK
         run: >-
-          flutter build apk --release
+          flutter build apk --debug
           --dart-define=FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
           --dart-define=FIREBASE_APP_ID=${{ vars.FIREBASE_APP_ID }}
           --dart-define=FIREBASE_MESSAGING_SENDER_ID=${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
           --dart-define=FIREBASE_PROJECT_ID=${{ vars.FIREBASE_PROJECT_ID }}
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: adnexa-android-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: adnexa-android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
