@@ -439,7 +439,7 @@ class _CampaignPageState extends State<CampaignPage> {
       objectiveDescriptions[objective] ?? 'เลือกวัตถุประสงค์ให้ตรงกับผลลัพธ์ที่ต้องการ';
 
   String _formatPeople(int value) => value.toString().replaceAllMapped(
-        RegExp(r'(\\d)(?=(\\d{3})+(?!\\d))'),
+        RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
         (match) => '${match[1]},',
       );
 
