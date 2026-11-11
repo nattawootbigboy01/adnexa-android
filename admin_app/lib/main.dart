@@ -184,7 +184,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ]);
       if (!mounted) return;
       setState(() {
-        overview = results[0];
+        overview = Map<String, dynamic>.from(results[0] as Map);
         connections = results[1] as List<Map<String, dynamic>>;
         events = results[2] as List<Map<String, dynamic>>;
       });
