@@ -194,7 +194,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool loading = true;
   String? error;
   Map<String, dynamic> overview = const {};
-  List<Map<String, dynamic>> connections = const [], events = const [];
+  List<Map<String, dynamic>> connections = const [], events = const [], auditDetails = const [];
   @override
   void initState() { super.initState(); load(); }
   Future<void> load() async {
@@ -204,12 +204,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         AdminApi.get('/api/admin/overview'),
         AdminApi.list('/api/admin/connections', 'connections'),
         AdminApi.list('/api/admin/audit', 'events'),
+        AdminApi.list('/api/admin/audit', 'details'),
       ]);
       if (!mounted) return;
       setState(() {
         overview = Map<String, dynamic>.from(results[0] as Map);
         connections = results[1] as List<Map<String, dynamic>>;
         events = results[2] as List<Map<String, dynamic>>;
+        auditDetails = results[3] as List<Map<String, dynamic>>;
       });
     } catch (e) { if (mounted) setState(() => error = e.toString().replaceFirst('Exception: ', '')); }
     finally { if (mounted) setState(() => loading = false); }
@@ -256,6 +258,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             Expanded(child: Text(event['action']?.toString() ?? 'กิจกรรม')),
             Text(dateLabel(event['created_at']), style: const TextStyle(color: muted, fontSize: 9)),
           ]))),
+          if (auditDetails.isNotEmpty) ...[
+            const SizedBox(height: 12), const SectionTitle('รายละเอียดการเปลี่ยนสิทธิ์'),
+            ...auditDetails.map((item) => Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(item['action']?.toString() ?? 'การเปลี่ยนแปลง', style: const TextStyle(fontWeight: FontWeight.w800)),
+              Text('สมาชิก UID: ' + (item['target_uid']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 10)),
+              Text('รายละเอียด: ' + (item['details']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 10)),
+              Text(dateLabel(item['created_at']), style: const TextStyle(color: muted, fontSize: 9)),
+            ]))),
+          ],
           const SizedBox(height: 12), const SectionTitle('ขอบเขตความปลอดภัย'),
           const Panel(child: Text('รุ่นแรกนี้อ่านได้เฉพาะภาพรวม การเชื่อมต่อ Meta และ Audit Log เท่านั้น ยังไม่มีการค้นหาหรือแก้ไขบัญชีลูกค้า เปลี่ยนสิทธิ์ ระงับบัญชี สร้างแคมเปญ หรือใช้งบโฆษณา การกำหนดสิทธิ์ Admin ต้องทำผ่านช่องทาง Firebase Admin ที่เชื่อถือได้', style: TextStyle(color: muted, height: 1.55, fontSize: 11))),
         ],
