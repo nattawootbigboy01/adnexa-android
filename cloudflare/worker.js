@@ -176,15 +176,16 @@ async function handleAdminOverview(request, env) {
     "SELECT COUNT(*) AS connected_users, SUM(CASE WHEN expires_at IS NULL OR expires_at > ? THEN 1 ELSE 0 END) AS active_connections FROM meta_connections"
   ).bind(now).first();
   await recordAdminAction(env, adminUid, "view_overview");
+  const adminRole = await getStoredAdminRole(env, adminUid);
   return json({
-    role: "admin",
+    role: adminRole || "customer",
     metrics: {
       connected_users: Number(totals && totals.connected_users || 0),
       active_connections: Number(totals && totals.active_connections || 0)
     },
     capabilities: {
-      user_directory: false,
-      role_management: false,
+      user_directory: true,
+      role_management: adminRole === "super_admin",
       campaign_controls: false,
       ad_spend_controls: false
     }
