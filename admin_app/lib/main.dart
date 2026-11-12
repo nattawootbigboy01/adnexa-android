@@ -268,7 +268,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ]))),
           ],
           const SizedBox(height: 12), const SectionTitle('ขอบเขตความปลอดภัย'),
-          const Panel(child: Text('รุ่นแรกนี้อ่านได้เฉพาะภาพรวม การเชื่อมต่อ Meta และ Audit Log เท่านั้น ยังไม่มีการค้นหาหรือแก้ไขบัญชีลูกค้า เปลี่ยนสิทธิ์ ระงับบัญชี สร้างแคมเปญ หรือใช้งบโฆษณา การกำหนดสิทธิ์ Admin ต้องทำผ่านช่องทาง Firebase Admin ที่เชื่อถือได้', style: TextStyle(color: muted, height: 1.55, fontSize: 11))),
+          const Panel(child: Text('รุ่นนี้แสดงภาพรวมระบบ การเชื่อมต่อ Meta และ Audit Log พร้อมค้นหาสมาชิกและดูบทบาทได้ เฉพาะผู้ดูแลสูงสุดเท่านั้นที่เปลี่ยนบทบาทลูกค้าเป็น Admin หรือ Support ได้ โดยเซิร์ฟเวอร์ตรวจสิทธิ์ทุกครั้ง ระบบยังไม่รองรับการระงับหรือลบบัญชี การสร้างหรือแก้ไขแคมเปญ การเผยแพร่โฆษณา หรือการใช้เงินจริง', style: TextStyle(color: muted, height: 1.55, fontSize: 11))),
         ],
       ])),
     );
