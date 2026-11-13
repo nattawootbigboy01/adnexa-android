@@ -129,7 +129,7 @@ class _AppShellState extends State<AppShell> {
       ])),
       bottomNavigationBar: NavigationBar(
         backgroundColor: const Color(0xFF10121A),
-        indicatorColor: violet.withOpacity(.18),
+        indicatorColor: violet.withValues(alpha: .18),
         selectedIndex: index,
         onDestinationSelected: (value) => setState(() => index = value),
         destinations: destinations,
@@ -149,9 +149,9 @@ class BrandMark extends StatelessWidget {
     decoration: BoxDecoration(
       color: const Color(0xFF080B10),
       borderRadius: BorderRadius.circular(size * .24),
-      border: Border.all(color: const Color(0xFF66758A).withOpacity(.42)),
+      border: Border.all(color: const Color(0xFF66758A).withValues(alpha: .42)),
       boxShadow: [
-        BoxShadow(color: const Color(0xFF258BFF).withOpacity(.18), blurRadius: 16, offset: const Offset(0, 4)),
+        BoxShadow(color: const Color(0xFF258BFF).withValues(alpha: .18), blurRadius: 16, offset: const Offset(0, 4)),
       ],
     ),
     child: Stack(
@@ -193,7 +193,7 @@ class MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(.055))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withValues(alpha: .055))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, color: const Color(0xFF78B8FF), size: 20),
       const SizedBox(height: 13),
@@ -294,7 +294,7 @@ class _DashboardPageState extends State<DashboardPage> {
             begin: Alignment.topLeft, end: Alignment.bottomRight,
             colors: [Color(0xFF14263D), Color(0xFF171925), Color(0xFF11131B)],
           ),
-          border: Border.all(color: violet.withOpacity(.22)),
+          border: Border.all(color: violet.withValues(alpha: .22)),
         ),
         child: Row(children: [
           const Expanded(child: Column(
@@ -371,7 +371,7 @@ class QuickChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(.06))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: .06))),
     child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: violet), const SizedBox(width: 7), Text(label, style: const TextStyle(fontSize: 11))]),
   );
 }
@@ -384,7 +384,7 @@ class PlatformTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 9),
     padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withOpacity(.05))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withValues(alpha: .05))),
     child: Row(children: [
       Container(width: 38, height: 38, decoration: BoxDecoration(color: const Color(0xFF14263D), borderRadius: BorderRadius.circular(11)), child: Icon(icon, color: const Color(0xFF78B8FF))),
       const SizedBox(width: 11),
@@ -777,7 +777,7 @@ class _ModeCard extends StatelessWidget {
     borderRadius: BorderRadius.circular(16),
     child: Container(
       padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(color: selected ? const Color(0xFF14263D) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withOpacity(.07), width: selected ? 1.5 : 1)),
+      decoration: BoxDecoration(color: selected ? const Color(0xFF14263D) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withValues(alpha: .07), width: selected ? 1.5 : 1)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: selected ? const Color(0xFF8CC7FF) : muted, size: 22), const SizedBox(height: 9), Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: selected ? Colors.white : muted)), const SizedBox(height: 4), Text(subtitle, style: const TextStyle(fontSize: 10, color: muted)), const SizedBox(height: 7), Text(selected ? 'SELECTED' : 'เลือกโหมดนี้', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: selected ? const Color(0xFF8CC7FF) : muted))]),
     ),
   );
@@ -1120,7 +1120,7 @@ class _AiPageState extends State<AiPage> {
     TextField(controller: audience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น คนทำงานอายุ 25–40 ปี ในขอนแก่น (ไม่บังคับ)')),
     const SectionTitle('4. โทนข้อความโฆษณา'),
     DropdownButtonFormField<String>(
-      value: tone,
+      initialValue: tone,
       items: ['เป็นกันเอง', 'มืออาชีพ', 'พรีเมียม', 'เร่งให้ตัดสินใจ'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
       onChanged: (v) => setState(() => tone = v ?? tone),
     ),
@@ -1259,7 +1259,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       ),
       const SectionTitle('ตัวกรองรายงาน'),
       DropdownButtonFormField<String>(
-        value: _accounts.any((a) => a['id']?.toString() == _selectedAccountId)
+        initialValue: _accounts.any((a) => a['id']?.toString() == _selectedAccountId)
             ? _selectedAccountId
             : null,
         isExpanded: true,
@@ -1280,7 +1280,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       ),
       const SizedBox(height: 10),
       DropdownButtonFormField<String>(
-        value: _datePreset,
+        initialValue: _datePreset,
         decoration: const InputDecoration(labelText: 'ช่วงเวลา'),
         items: _ranges.entries.map((entry) => DropdownMenuItem(
           value: entry.key,
@@ -1478,7 +1478,7 @@ class CardPanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(.055))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: .055))),
     child: child,
   );
 }
