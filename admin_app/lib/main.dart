@@ -34,7 +34,7 @@ class AdminApp extends StatelessWidget {
     title: 'ADNEXA ADMIN', debugShowCheckedModeBanner: false,
     theme: ThemeData(brightness: Brightness.dark, scaffoldBackgroundColor: bg, colorScheme: const ColorScheme.dark(primary: blue, surface: panel), useMaterial3: true,
       inputDecorationTheme: InputDecorationTheme(filled: true, fillColor: panel, border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none))),
-    home: startupError != null ? SetupPage(message: 'เริ่มต้น Firebase ไม่สำเร็จ: ' + startupError!) : firebaseReady ? const AdminAuthGate() : const SetupPage(),
+    home: startupError != null ? SetupPage(message: 'เริ่มต้น Firebase ไม่สำเร็จ: ${startupError!}') : firebaseReady ? const AdminAuthGate() : const SetupPage(),
   );
 }
 
@@ -94,7 +94,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(email: email.text.trim(), password: password.text);
     } on FirebaseAuthException catch (e) {
-      if (mounted) setState(() => error = (e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'user-not-found') ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : 'เข้าสู่ระบบไม่สำเร็จ (' + e.code + ')');
+      if (mounted) setState(() => error = (e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'user-not-found') ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : 'เข้าสู่ระบบไม่สำเร็จ (${e.code})');
     } catch (_) { if (mounted) setState(() => error = 'เกิดข้อผิดพลาด กรุณาลองใหม่'); }
     finally { if (mounted) setState(() => busy = false); }
   }
@@ -138,12 +138,14 @@ class _AdminAccessGateState extends State<AdminAccessGate> {
   @override
   Widget build(BuildContext context) => FutureBuilder<bool>(future: access, builder: (context, snap) {
     if (snap.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (snap.hasError || snap.data != true) return Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
+    if (snap.hasError || snap.data != true) {
+      return Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(Icons.gpp_bad_outlined, size: 54, color: Colors.orangeAccent), const SizedBox(height: 12),
       const Text('บัญชีนี้ยังไม่มีสิทธิ์ผู้ดูแล', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
       const SizedBox(height: 8), const Text('การเข้าสู่ระบบสำเร็จไม่ได้หมายความว่าเป็น Admin ระบบตรวจสอบ Firebase custom claim และเซิร์ฟเวอร์จะตรวจสอบซ้ำทุกครั้ง', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
       const SizedBox(height: 20), OutlinedButton.icon(onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout), label: const Text('ออกจากระบบ')),
     ]))));
+    }
     return const AdminDashboardPage();
   });
 }
@@ -154,7 +156,7 @@ class AdminApi {
     if (user == null) throw Exception('กรุณาเข้าสู่ระบบใหม่');
     final token = await user.getIdToken();
     if (token == null || token.isEmpty) throw Exception('ยืนยันตัวตนไม่สำเร็จ');
-    final response = await http.get(Uri.parse(apiBase + path), headers: {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}).timeout(const Duration(seconds: 20));
+    final response = await http.get(Uri.parse(apiBase + path), headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'}).timeout(const Duration(seconds: 20));
     final decoded = jsonDecode(response.body);
     if (decoded is! Map<String, dynamic>) throw Exception('รูปแบบข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง');
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception(response.statusCode == 403 ? 'เซิร์ฟเวอร์ปฏิเสธสิทธิ์ผู้ดูแล' : decoded['error']?.toString() ?? 'โหลดข้อมูลไม่สำเร็จ');
@@ -221,7 +223,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     if (seconds == null) return '—';
     final d = DateTime.fromMillisecondsSinceEpoch(seconds * 1000).toLocal();
     String two(int n) => n.toString().padLeft(2, '0');
-    return two(d.day) + '/' + two(d.month) + '/' + d.year.toString() + ' ' + two(d.hour) + ':' + two(d.minute);
+    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
   }
   @override
   Widget build(BuildContext context) {
@@ -248,8 +250,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           if (connections.isEmpty) const Panel(child: Text('ยังไม่มีรายการเชื่อมต่อ Meta')),
           ...connections.map((item) => Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(item['meta_name']?.toString() ?? 'Meta account', style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 5), Text('Meta ID: ' + (item['meta_user_id']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 11)),
-            Text('หมดอายุ: ' + dateLabel(item['expires_at']), style: const TextStyle(color: muted, fontSize: 10)),
+            const SizedBox(height: 5), Text('Meta ID: ${item['meta_user_id']?.toString() ?? '—'}', style: const TextStyle(color: muted, fontSize: 11)),
+            Text('หมดอายุ: ${dateLabel(item['expires_at'])}', style: const TextStyle(color: muted, fontSize: 10)),
           ]))),
           const SizedBox(height: 12), const SectionTitle('ประวัติการใช้งานแอดมิน'),
           if (events.isEmpty) const Panel(child: Text('ยังไม่มีประวัติกิจกรรม')),
@@ -262,8 +264,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 12), const SectionTitle('รายละเอียดการเปลี่ยนสิทธิ์'),
             ...auditDetails.map((item) => Panel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(item['action']?.toString() ?? 'การเปลี่ยนแปลง', style: const TextStyle(fontWeight: FontWeight.w800)),
-              Text('สมาชิก UID: ' + (item['target_uid']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 10)),
-              Text('รายละเอียด: ' + (item['details']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 10)),
+              Text('สมาชิก UID: ${item['target_uid']?.toString() ?? '—'}', style: const TextStyle(color: muted, fontSize: 10)),
+              Text('รายละเอียด: ${item['details']?.toString() ?? '—'}', style: const TextStyle(color: muted, fontSize: 10)),
               Text(dateLabel(item['created_at']), style: const TextStyle(color: muted, fontSize: 9)),
             ]))),
           ],
@@ -296,7 +298,9 @@ class _MemberManagementPageState extends State<MemberManagementPage> {
     setState(() { loading = true; error = null; });
     try {
       final query = Uri.encodeQueryComponent(search.text.trim());
-      final result = await AdminApi.get('/api/admin/members?limit=100' + (query.isEmpty ? '' : '&search=' + query));
+      final result = await AdminApi.get(
+        '/api/admin/members?limit=100${query.isEmpty ? '' : '&search=$query'}',
+      );
       if (!mounted) return;
       setState(() {
         members = (result['members'] as List? ?? const [])
@@ -327,7 +331,7 @@ class _MemberManagementPageState extends State<MemberManagementPage> {
     if (confirmed != true) return;
     setState(() { saving = true; error = null; });
     try {
-      await AdminApi.put('/api/admin/members/' + Uri.encodeComponent(uid) + '/role', {'role': role});
+      await AdminApi.put('/api/admin/members/${Uri.encodeComponent(uid)}/role', {'role': role});
       await load();
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('บันทึกสิทธิ์เรียบร้อย')));
     } catch (e) {
@@ -402,8 +406,8 @@ class _MemberManagementPageState extends State<MemberManagementPage> {
                       const SizedBox(height: 7),
                       Text(roleLabel(role), style: const TextStyle(color: blue, fontSize: 11, fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      Text('UID: ' + uid, style: const TextStyle(color: muted, fontSize: 9)),
-                      Text('เข้าใช้ล่าสุด: ' + (member['last_seen_at']?.toString() ?? '—'), style: const TextStyle(color: muted, fontSize: 9)),
+                      Text('UID: $uid', style: const TextStyle(color: muted, fontSize: 9)),
+                      Text('เข้าใช้ล่าสุด: ${member['last_seen_at']?.toString() ?? '—'}', style: const TextStyle(color: muted, fontSize: 9)),
                     ]));
                   },
                 ),
@@ -433,7 +437,7 @@ class Panel extends StatelessWidget {
   final Widget child;
   const Panel({required this.child, super.key});
   @override
-  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(.05))), child: child);
+  Widget build(BuildContext context) => Container(margin: const EdgeInsets.only(bottom: 9), padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: .05))), child: child);
 }
 class MetricCard extends StatelessWidget {
   final String title, value;
