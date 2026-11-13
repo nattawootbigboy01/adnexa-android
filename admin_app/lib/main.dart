@@ -169,7 +169,7 @@ class AdminApi {
     if (token == null || token.isEmpty) throw Exception('ยืนยันตัวตนไม่สำเร็จ');
     final response = await http.put(
       Uri.parse(apiBase + path),
-      headers: {'Authorization': 'Bearer ' + token, 'Accept': 'application/json', 'Content-Type': 'application/json'},
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json', 'Content-Type': 'application/json'},
       body: jsonEncode(body),
     ).timeout(const Duration(seconds: 20));
     final decoded = jsonDecode(response.body);
