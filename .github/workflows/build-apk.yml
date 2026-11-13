@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - feature/admin-member-management-20261111
+  pull_request:
+    branches:
+      - feature/admin-member-management-20261111
   workflow_dispatch:
 
 permissions:
