@@ -1,6 +1,6 @@
 # CONTENTNEX Backend API Contract (design only)
 
-Status: **specification only**. No backend service is deployed and no endpoint in this document is live.
+Status: **contract plus source scaffold**. The Worker source implements health and Firebase token verification, but it is not deployed or runtime-tested; no endpoint is live.
 
 ## Goals
 
@@ -29,6 +29,9 @@ Example response:
 This route is public and returns no user-specific information.
 
 ### `POST /v1/ai/generate`
+
+The current Worker validates authentication, consent, and request shape, then returns `AI_PROVIDER_DISABLED` (503). It does not call Gemini or forward the prompt to an external provider.
+
 
 Requires a valid Firebase ID token:
 
