@@ -524,9 +524,9 @@ class _AiPageState extends State<AiPage> {
     }
     final request = AiRequest(
       task: selectedAiTask,
-      prompt: 'ช่วยสร้างคอนเทนต์สำหรับสินค้า/บริการ: $item\\n'
-          'กลุ่มลูกค้า: ${audience.text.trim().isEmpty ? 'ยังไม่ระบุ' : audience.text.trim()}\\n'
-          'โทนภาษา: $tone\\n'
+      prompt: 'ช่วยสร้างคอนเทนต์สำหรับสินค้า/บริการ: $item\n'
+          'กลุ่มลูกค้า: ${audience.text.trim().isEmpty ? 'ยังไม่ระบุ' : audience.text.trim()}\n'
+          'โทนภาษา: $tone\n'
           'งบโฆษณาที่วางแผน: ${budget.text.trim()} บาทต่อวัน',
       languageCode: 'th',
       context: {'productOrService': item, 'tone': tone},
