@@ -9,7 +9,7 @@ AI Content Business Studio — วางแผนและสร้างคอ�
 - Manual Gemini prompt preparation for six approved roles: AI COUNCIL, COPYWRITER, POSTER STUDIO, VIDEO SCRIPT, CONTENT PLANNER, and QUALITY CONTROLLER.
 - Manual prompt flow is available in the AI screen; users review and copy the prompt, then open their own Gemini account themselves.
 - Users can paste Gemini's response back into the app and save it to the on-device Content Library.
-- Content Library supports viewing, editing, copying, and deleting saved drafts; data is stored locally with SharedPreferences and is not cloud-synced.
+- Content Library supports searching draft titles and body text, filtering by AI role, viewing, editing, copying, and deleting saved drafts; data is stored locally with SharedPreferences and is not cloud-synced.
 - Cloudflare Worker backend source scaffold (not deployed), Firebase ID-token verification, and Gemini Hybrid design specifications.
 - Backend unit tests and Flutter analyze/test workflows.
 
