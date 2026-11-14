@@ -5,8 +5,7 @@ This one-time utility adds only the CONTENTNEX-scoped Firebase Custom Claim. It 
 ## Target being provisioned
 
 - Firebase project: `adnexa-8daea`
-- Expected account email: `nattawootbigboy01@gmail.com`
-- Expected UID: `8rVDqEe3kjMgXjbjCgGuMEvh5J72`
+- The owner supplies the target account email and UID through environment variables at runtime; personal account identifiers are not stored in the repository.
 - Claim: `contentnexRole=super_admin`
 
 The script still requires the owner to run it in a trusted Google Cloud Shell session. The project, UID, and email are checked before any write. It also requires the account email to be verified and preserves other custom claims.
