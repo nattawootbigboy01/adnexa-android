@@ -6,8 +6,8 @@
 - Authentication: Firebase Authentication (email/password and email verification).
 - Local campaign drafts: SharedPreferences.
 - Current AI planning helpers: offline rule-based sample logic in the app.
-- No production AI provider, server-side API, user-content database, or admin role
-  implementation is present in the current branch yet.
+- A Cloudflare Worker backend source scaffold now exists under `backend/`, including a health route and Firebase ID-token verification. It has not been deployed or runtime-tested.
+- The AI endpoint intentionally remains disabled; no Gemini provider, user-content database, or server-enforced admin role is active.
 
 ## Target architecture
 
@@ -19,7 +19,7 @@ Flutter Android
        |
   AiOrchestrator (provider-neutral)
        |
-  Backend API (planned)
+  Cloudflare Worker API (source only; not deployed)
        |
   Gemini provider (planned; server-side secret only)
 ```
