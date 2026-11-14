@@ -8,15 +8,18 @@ AI Content Business Studio — วางแผนและสร้างคอ�
 - Provider-neutral AI request, provider, and orchestration contracts.
 - Manual Gemini prompt preparation for six approved roles: AI COUNCIL, COPYWRITER, POSTER STUDIO, VIDEO SCRIPT, CONTENT PLANNER, and QUALITY CONTROLLER.
 - Manual prompt flow is available in the AI screen; users review and copy the prompt, then open their own Gemini account themselves.
+- Users can paste Gemini's response back into the app and save it to the on-device Content Library.
+- Content Library supports viewing, editing, copying, and deleting saved drafts; data is stored locally with SharedPreferences and is not cloud-synced.
 - Cloudflare Worker backend source scaffold (not deployed), Firebase ID-token verification, and Gemini Hybrid design specifications.
-- Backend unit tests and a Flutter analyze/test workflow.
+- Backend unit tests and Flutter analyze/test workflows.
 
 ## Verified limitations
 - Backend Worker source exists but no backend API is deployed or runtime-tested.
 - No Gemini API provider is connected; manual mode prepares prompts only and does not contact Gemini.
-- The manual Gemini response is not automatically imported back into CONTENTNEX yet.
+- Gemini results enter the app only when the user manually pastes them; there is no automatic Gemini account integration.
+- Content Library is device-local; uninstalling or clearing app data may remove saved content. No cloud backup or cross-device sync.
 - Dashboard metrics and platform connection states are sample/demo UI.
-- No production admin role enforcement, content database, OAuth token storage, or live analytics.
+- No production admin role enforcement, cloud content database, OAuth token storage, or live analytics.
 - No real campaign is created, published, or billed.
 - Flutter CI checks are separate from APK builds; no APK build is started by the test workflow.
 
