@@ -9,7 +9,7 @@ const ALLOWED_TASKS = new Set([
   'content_plan',
   'quality_review',
 ]);
-const TRUSTED_ROLES = new Set(['customer', 'support', 'admin']);
+const CONTENTNEX_ROLES = new Set(['customer', 'support', 'super_admin']);
 const ALLOWED_REQUEST_FIELDS = new Set([
   'task', 'prompt', 'languageCode', 'context', 'consent',
 ]);
@@ -60,10 +60,12 @@ async function loadSigningKey(kid) {
   );
 }
 
-/** Read only server-verified Firebase custom claims; unknown/missing roles fail closed. */
+/** Only CONTENTNEX-specific claims grant roles in this application. */
 export function getTrustedRole(claims) {
   if (!claims || typeof claims !== 'object' || Array.isArray(claims)) return 'customer';
-  return TRUSTED_ROLES.has(claims.role) ? claims.role : 'customer';
+  return CONTENTNEX_ROLES.has(claims.contentnexRole)
+    ? claims.contentnexRole
+    : 'customer';
 }
 
 /** Verify Firebase Authentication ID token and return trusted claims. */
@@ -191,7 +193,7 @@ export default {
       return json({
         status: 'ok',
         service: 'contentnex-api',
-        version: '0.1.0',
+        version: '0.2.0',
         aiProviderEnabled: false,
       }, 200, headers);
     }
@@ -205,10 +207,10 @@ export default {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
       }
       const role = getTrustedRole(claims);
-      if (role !== 'admin') {
+      if (role !== 'super_admin') {
         return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
       }
-      return json({ authorized: true, role: 'admin' }, 200, headers);
+      return json({ authorized: true, role: 'super_admin' }, 200, headers);
     }
 
     if (url.pathname === '/v1/ai/generate' && request.method === 'POST') {
