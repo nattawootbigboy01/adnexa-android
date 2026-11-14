@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 import 'auth_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() => runApp(const AdnexaApp());
+void main() => runApp(const ContentNexApp());
 
 const bg = Color(0xFF08090D);
 const panel = Color(0xFF141620);
 const violet = Color(0xFF9270FF);
 const muted = Color(0xFF9295A5);
 
-class AdnexaApp extends StatelessWidget {
-  const AdnexaApp({super.key});
+class ContentNexApp extends StatelessWidget {
+  const ContentNexApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'ADNEXA',
+    title: 'CONTENTNEX',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -39,8 +39,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), AnalyticsPage()];
-  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'ADNEXA AI', 'Analytics'];
+  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), ผลลัพธ์คอนเทนต์Page()];
+  final titles = const ['ภาพรวมธุรกิจคอนเทนต์', 'Content Studio', 'ศูนย์เชื่อมต่อแพลตฟอร์ม', 'CONTENTNEX AI', 'ผลลัพธ์คอนเทนต์'];
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -59,8 +59,8 @@ class _AppShellState extends State<AppShell> {
           ),
           const SizedBox(width: 11),
           const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('ADNEXA', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
-            Text('ADVERTISING INTELLIGENCE', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.4)),
+            Text('CONTENTNEX', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
+            Text('AI CONTENT BUSINESS STUDIO', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.4)),
           ]),
           const Spacer(),
           IconButton(onPressed: () => notice(context, 'ระบบแจ้งเตือนจะเปิดใช้เมื่อเชื่อมต่อ Backend'), icon: const Icon(Icons.notifications_none_rounded)),
@@ -82,10 +82,10 @@ class _AppShellState extends State<AppShell> {
       onDestinationSelected: (v) => setState(() => index = v),
       destinations: const [
         NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
-        NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'Campaigns'),
+        NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'คอนเทนต์'),
         NavigationDestination(icon: Icon(Icons.link_rounded), label: 'Accounts'),
         NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
-        NavigationDestination(icon: Icon(Icons.query_stats), label: 'Insights'),
+        NavigationDestination(icon: Icon(Icons.query_stats), label: 'สถิติ'),
       ],
     ),
   );
@@ -114,7 +114,7 @@ class DemoNotice extends StatelessWidget {
     child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(Icons.info_outline, color: Color(0xFFBBA8FF), size: 18),
       SizedBox(width: 9),
-      Expanded(child: Text('DEMO MODE • ตัวเลขและการเชื่อมต่อเป็นข้อมูลจำลอง ยังไม่มีการยิงโฆษณาจริง', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11, height: 1.45))),
+      Expanded(child: Text('โหมดตัวอย่าง • ข้อมูลสถิติและสถานะการเชื่อมต่อเป็นข้อมูลจำลอง ยังไม่มีการเชื่อมต่อเผยแพร่จริง', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11, height: 1.45))),
     ]),
   );
 }
@@ -169,33 +169,33 @@ class DashboardPage extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('YOUR ADVERTISING,\nONE INTELLIGENT SPACE.', style: TextStyle(fontSize: 21, height: 1.25, fontWeight: FontWeight.w900, letterSpacing: .4)),
         const SizedBox(height: 9),
-        const Text('วางแผน จัดการ และวิเคราะห์แคมเปญในที่เดียว', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 12)),
+        const Text('วางแผน สร้าง และจัดการคอนเทนต์สำหรับธุรกิจในที่เดียว', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 12)),
         const SizedBox(height: 18),
-        FilledButton.icon(onPressed: () => notice(context, 'Campaign Studio เป็นโหมดทดลอง'), icon: const Icon(Icons.add, size: 18), label: const Text('Create campaign'), style: FilledButton.styleFrom(backgroundColor: violet, foregroundColor: Colors.white)),
+        FilledButton.icon(onPressed: () => notice(context, 'Content Studio เป็นโหมดทดลอง'), icon: const Icon(Icons.add, size: 18), label: const Text('สร้างคอนเทนต์'), style: FilledButton.styleFrom(backgroundColor: violet, foregroundColor: Colors.white)),
       ]),
     ),
-    const SectionTitle('Performance snapshot', action: 'DEMO DATA'),
+    const SectionTitle('ภาพรวมประสิทธิภาพ', action: 'DEMO DATA'),
     const Row(children: [
-      Expanded(child: MetricCard(label: 'Total spend', value: '฿8,420', delta: '+12.8% vs last period', icon: Icons.payments_outlined)),
+      Expanded(child: MetricCard(label: 'งบประมาณตัวอย่าง', value: '฿8,420', delta: '+12.8% vs last period', icon: Icons.payments_outlined)),
       SizedBox(width: 10),
-      Expanded(child: MetricCard(label: 'Impressions', value: '42.8K', delta: '+8.4% vs last period', icon: Icons.visibility_outlined)),
+      Expanded(child: MetricCard(label: 'การเข้าถึงตัวอย่าง', value: '42.8K', delta: '+8.4% vs last period', icon: Icons.visibility_outlined)),
     ]),
     const SizedBox(height: 10),
     const Row(children: [
-      Expanded(child: MetricCard(label: 'Clicks', value: '1,284', delta: '+5.2% vs last period', icon: Icons.ads_click)),
+      Expanded(child: MetricCard(label: 'คลิกตัวอย่าง', value: '1,284', delta: '+5.2% vs last period', icon: Icons.ads_click)),
       SizedBox(width: 10),
-      Expanded(child: MetricCard(label: 'ROAS', value: '3.42x', delta: '+0.6x vs last period', icon: Icons.trending_up)),
+      Expanded(child: MetricCard(label: 'ผลตอบแทนตัวอย่าง', value: '3.42x', delta: '+0.6x vs last period', icon: Icons.trending_up)),
     ]),
-    const SectionTitle('Connected platforms'),
+    const SectionTitle('แพลตฟอร์มสำหรับเผยแพร่'),
     const PlatformTile(name: 'Meta Ads', subtitle: 'Facebook & Instagram', icon: Icons.facebook, status: 'Not connected'),
     const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'Not connected'),
-    const PlatformTile(name: 'Google Ads', subtitle: 'Search, Display & YouTube', icon: Icons.ads_click, status: 'Not connected'),
+    const PlatformTile(name: 'ช่องทางอื่น (ภายหลัง)', subtitle: 'Search, Display & YouTube', icon: Icons.ads_click, status: 'Not connected'),
     const SectionTitle('Quick tools'),
     const Wrap(spacing: 8, runSpacing: 8, children: [
       QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
       QuickChip(icon: Icons.groups_outlined, label: 'Audience'),
       QuickChip(icon: Icons.insights, label: 'Reports'),
-      QuickChip(icon: Icons.receipt_long, label: 'Billing'),
+      QuickChip(icon: Icons.receipt_long, label: 'คลังคอนเทนต์'),
     ]),
   ]);
 }
@@ -315,13 +315,13 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads', 'Google Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(value: platform, items: ['Meta', 'TikTok'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
     const SizedBox(height: 15),
-    const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('ชื่อสินค้า / หัวข้อคอนเทนต์', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    TextField(controller: name, decoration: const InputDecoration(hintText: 'e.g. November product launch')),
+    TextField(controller: name, decoration: const InputDecoration(hintText: 'เช่น โปรโมชันสินค้าใหม่')),
     const SizedBox(height: 15),
-    const Text('Objective', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+    const Text('เป้าหมายคอนเทนต์', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
     DropdownButtonFormField<String>(value: objective, items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => objective = v!)),
     const SizedBox(height: 15),
@@ -402,7 +402,7 @@ class AccountsPage extends StatelessWidget {
     for (final p in const [
       ['Meta Ads', 'Facebook & Instagram campaign accounts', 'Meta'],
       ['TikTok Ads', 'TikTok for Business advertiser accounts', 'TikTok'],
-      ['Google Ads', 'Google Search, Display and YouTube', 'Google'],
+      ['ช่องทางอื่น (ภายหลัง)', 'Google Search, Display and YouTube', 'Google'],
     ])
       CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(p[0], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
@@ -419,7 +419,7 @@ class AccountsPage extends StatelessWidget {
     const SizedBox(height: 6),
     const Text('Security principle', style: TextStyle(fontWeight: FontWeight.w700)),
     const SizedBox(height: 7),
-    const Text('ADNEXA จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อจริงจะใช้ OAuth ทางการและจัดเก็บ Token ฝั่งเซิร์ฟเวอร์เท่านั้น', style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
+    const Text('CONTENTNEX จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อจริงจะใช้ OAuth ทางการและจัดเก็บ Token ฝั่งเซิร์ฟเวอร์เท่านั้น', style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
   ]);
 }
 
@@ -523,7 +523,7 @@ class _AiPageState extends State<AiPage> {
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
         SizedBox(height: 10),
-        Text('ADNEXA Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text('CONTENTNEX Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         SizedBox(height: 5),
         Text('วิเคราะห์เบื้องต้น วางกลุ่มเป้าหมาย และประเมินผลตามงบประมาณ', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
       ]),
@@ -565,8 +565,8 @@ class _AiPageState extends State<AiPage> {
   ]);
 }
 
-class AnalyticsPage extends StatelessWidget {
-  const AnalyticsPage({super.key});
+class ผลลัพธ์คอนเทนต์Page extends StatelessWidget {
+  const ผลลัพธ์คอนเทนต์Page({super.key});
   @override
   Widget build(BuildContext context) => PageBody(children: [
     const Text('Campaign performance overview', style: TextStyle(color: muted, fontSize: 12)),
@@ -579,7 +579,7 @@ class AnalyticsPage extends StatelessWidget {
       Expanded(child: MetricCard(label: 'Conversions', value: '146', delta: 'Demo metric', icon: Icons.shopping_bag_outlined)),
     ]),
     const SizedBox(height: 9),
-    const MetricCard(label: 'ROAS', value: '3.42x', delta: 'Demo metric', icon: Icons.trending_up),
+    const MetricCard(label: 'ผลตอบแทนตัวอย่าง', value: '3.42x', delta: 'Demo metric', icon: Icons.trending_up),
     const SectionTitle('Reporting'),
     const EmptyState(text: 'รายงานจริงจะแสดงเมื่อเชื่อมต่อแพลตฟอร์มโฆษณา'),
   ]);
