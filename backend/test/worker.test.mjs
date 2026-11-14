@@ -13,6 +13,7 @@ test('health endpoint reports service status without enabling AI', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(body.service, 'contentnex-api');
+  assert.equal(body.version, '0.2.0');
   assert.equal(body.aiProviderEnabled, false);
 });
 
@@ -80,17 +81,23 @@ test('unknown routes return a JSON 404', async () => {
   assert.equal(response.status, 404);
 });
 
-test('missing, unknown, and malformed roles fail closed to customer', () => {
+test('missing, unknown, and malformed CONTENTNEX roles fail closed to customer', () => {
   assert.equal(getTrustedRole({ uid: 'user-1' }), 'customer');
-  assert.equal(getTrustedRole({ role: 'owner' }), 'customer');
-  assert.equal(getTrustedRole({ role: ['admin'] }), 'customer');
+  assert.equal(getTrustedRole({ contentnexRole: 'owner' }), 'customer');
+  assert.equal(getTrustedRole({ contentnexRole: ['super_admin'] }), 'customer');
   assert.equal(getTrustedRole(null), 'customer');
 });
 
-test('only a trusted Firebase admin custom claim grants admin role', () => {
-  assert.equal(getTrustedRole({ role: 'admin' }), 'admin');
-  assert.equal(getTrustedRole({ role: 'support' }), 'support');
-  assert.equal(getTrustedRole({ role: 'customer' }), 'customer');
+test('generic role claims never grant CONTENTNEX privileges in the shared Firebase project', () => {
+  assert.equal(getTrustedRole({ role: 'admin' }), 'customer');
+  assert.equal(getTrustedRole({ role: 'super_admin' }), 'customer');
+  assert.equal(getTrustedRole({ role: 'support' }), 'customer');
+});
+
+test('only the namespaced CONTENTNEX super_admin claim grants its admin role', () => {
+  assert.equal(getTrustedRole({ contentnexRole: 'super_admin' }), 'super_admin');
+  assert.equal(getTrustedRole({ contentnexRole: 'support' }), 'support');
+  assert.equal(getTrustedRole({ contentnexRole: 'customer' }), 'customer');
 });
 
 test('admin access-check rejects requests without a Firebase token', async () => {
@@ -105,10 +112,10 @@ test('admin access-check rejects requests without a Firebase token', async () =>
 
 test('admin access-check is read-only and does not accept role from query or body', async () => {
   const response = await worker.fetch(
-    new Request('https://contentnex-api.test/v1/admin/access-check?role=admin', {
+    new Request('https://contentnex-api.test/v1/admin/access-check?role=super_admin', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ role: 'admin' }),
+      body: JSON.stringify({ contentnexRole: 'super_admin' }),
     }),
     env,
   );
