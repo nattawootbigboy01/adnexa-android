@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'auth_gate.dart';
 import 'core/ai/ai_request.dart';
 import 'core/ai/manual_prompt_builder.dart';
+import 'core/content/content_item.dart';
+import 'core/content/content_library_store.dart';
+import 'core/content/content_library_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const AdnexaApp());
@@ -42,8 +45,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), AnalyticsPage()];
-  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'CONTENTNEX AI', 'Analytics'];
+  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), ContentLibraryPage(), AnalyticsPage()];
+  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'CONTENTNEX AI', 'Content Library', 'Analytics'];
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -88,6 +91,7 @@ class _AppShellState extends State<AppShell> {
         NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'Campaigns'),
         NavigationDestination(icon: Icon(Icons.link_rounded), label: 'Accounts'),
         NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
+        NavigationDestination(icon: Icon(Icons.library_books_outlined), label: 'Library'),
         NavigationDestination(icon: Icon(Icons.query_stats), label: 'Insights'),
       ],
     ),
@@ -441,12 +445,14 @@ class _AiPageState extends State<AiPage> {
   String? output;
   String? audiencePlan;
   String? estimate;
+  final geminiResult = TextEditingController();
 
   @override
   void dispose() {
     product.dispose();
     audience.dispose();
     budget.dispose();
+    geminiResult.dispose();
     super.dispose();
   }
 
@@ -514,6 +520,27 @@ class _AiPageState extends State<AiPage> {
       output = 'พบกับ $item ที่ออกแบบมาเพื่อตอบโจทย์คุณ เลือกสิ่งที่ใช่และติดต่อเราได้วันนี้!\nโทนข้อความ: $tone';
       estimate = 'งบประมาณที่ใช้คำนวณ: ฿${amount.toStringAsFixed(0)} ต่อวัน\nการแสดงผลโดยประมาณ: ${impressionsLow.toString()}–${impressionsHigh.toString()} ครั้ง/วัน\nคลิกโดยประมาณ: ${clicksLow.toString()}–${clicksHigh.toString()} ครั้ง/วัน';
     });
+  }
+
+  Future<void> saveGeminiResult() async {
+    final result = geminiResult.text.trim();
+    if (result.isEmpty) {
+      notice(context, 'วางผลลัพธ์จาก Gemini ก่อนบันทึก');
+      return;
+    }
+    final item = ContentItem(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: product.text.trim().isEmpty
+          ? 'ผลงาน ${DateTime.now().toLocal().toString().substring(0, 16)}'
+          : product.text.trim(),
+      task: selectedAiTask,
+      content: result,
+      createdAt: DateTime.now(),
+    );
+    await ContentLibraryStore().save(item);
+    if (!mounted) return;
+    geminiResult.clear();
+    notice(context, 'บันทึกผลงานลง Content Library ในเครื่องแล้ว');
   }
 
   Future<void> prepareManualGeminiPrompt() async {
@@ -625,6 +652,25 @@ class _AiPageState extends State<AiPage> {
     const Text(
       'โหมด Manual: แอปจะเตรียมข้อความให้เท่านั้น ไม่เชื่อมต่อหรือส่งข้อมูลไป Gemini อัตโนมัติ คุณเป็นผู้เปิด Gemini และเลือกวาง Prompt เอง',
       style: TextStyle(color: muted, fontSize: 10, height: 1.5),
+    ),
+    const SectionTitle('นำผลลัพธ์จาก Gemini เข้าแอป'),
+    TextField(
+      controller: geminiResult,
+      minLines: 5,
+      maxLines: 12,
+      decoration: const InputDecoration(
+        hintText: 'กลับจาก Gemini แล้ววางคำตอบที่นี่...',
+        alignLabelWithHint: true,
+      ),
+    ),
+    const SizedBox(height: 8),
+    SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: saveGeminiResult,
+        icon: const Icon(Icons.save_alt),
+        label: const Text('บันทึกลง Content Library'),
+      ),
     ),
     if (audiencePlan != null) ...[
       const SectionTitle('ผลวิเคราะห์กลุ่มเป้าหมาย'),
