@@ -1,0 +1,10 @@
+name = "contentnex-api"
+main = "src/index.mjs"
+compatibility_date = "2025-01-01"
+
+[vars]
+FIREBASE_PROJECT_ID = "adnexa-8daea"
+
+# Set APP_ORIGIN only when the final web origin is known.
+# Native Android requests do not rely on browser CORS.
+# Do not add API keys or other secrets to this file.
