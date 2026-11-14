@@ -1,4 +1,4 @@
-name: Build CONTENTNEX APK
+name: Build ADNEXA APK
 
 on:
   workflow_dispatch:
@@ -23,11 +23,11 @@ jobs:
           channel: stable
           cache: true
       - name: Generate Android project files
-        run: flutter create . --platforms=android --project-name contentnex
-      - name: Apply CONTENTNEX launcher icon and app name
+        run: flutter create . --platforms=android --project-name adnexa
+      - name: Apply ADNEXA launcher icon and app name
         run: |
           mkdir -p android/app/src/main/res/drawable
-          cat > android/app/src/main/res/drawable/ic_contentnex.xml <<'EOF'
+          cat > android/app/src/main/res/drawable/ic_adnexa.xml <<'EOF'
           <vector xmlns:android="http://schemas.android.com/apk/res/android"
               android:width="108dp"
               android:height="108dp"
@@ -45,8 +45,8 @@ jobs:
           from pathlib import Path
           p = Path("android/app/src/main/AndroidManifest.xml")
           s = p.read_text()
-          s = s.replace('android:label="contentnex"', 'android:label="CONTENTNEX สร้างคอนเทนต์"')
-          s = s.replace('android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/ic_contentnex"')
+          s = s.replace('android:label="adnexa"', 'android:label="CONTENTNEX"')
+          s = s.replace('android:icon="@mipmap/ic_launcher"', 'android:icon="@drawable/ic_adnexa"')
           p.write_text(s)
           PY
       - name: Install dependencies
@@ -64,6 +64,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: contentnex-android-apk
+          name: adnexa-android-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
