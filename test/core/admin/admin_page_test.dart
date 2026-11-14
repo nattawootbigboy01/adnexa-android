@@ -3,17 +3,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('admin prototype clearly shows gated access and modules',
+  testWidgets('super admin claim opens the admin control center',
       (tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: AdminPage()),
-    );
+    await tester.pumpWidget(MaterialApp(
+      home: AdminPage(loadClaims: () async => {
+        'contentnexRole': 'super_admin',
+      }),
+    ));
+    await tester.pumpAndSettle();
 
     expect(find.text('ADMIN CONTROL CENTER'), findsOneWidget);
-    expect(find.text('โหมดต้นแบบ — ยังไม่เปิดสิทธิ์แอดมิน'), findsOneWidget);
-    expect(find.text('จัดการผู้ใช้งาน'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Audit Log'), 300);
-    expect(find.text('Audit Log'), findsOneWidget);
-    expect(find.text('ยังไม่เชื่อมต่อ'), findsOneWidget);
+    expect(find.text('ยืนยันสิทธิ์ CONTENTNEX Super Admin แล้ว'), findsOneWidget);
+    expect(find.text('โหมดต้นแบบ — ยังไม่เปิดสิทธิ์แอดมิน'), findsNothing);
+  });
+
+  testWidgets('customer claim is denied access to the admin center',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: AdminPage(loadClaims: () async => {
+        'contentnexRole': 'customer',
+      }),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ไม่มีสิทธิ์ผู้ดูแลระบบ'), findsOneWidget);
+    expect(find.text('ADMIN CONTROL CENTER'), findsNothing);
   });
 }
