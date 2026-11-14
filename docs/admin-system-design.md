@@ -3,26 +3,28 @@
 ## Purpose
 Provide a separate operational workspace for CONTENTNEX administrators without exposing customer data or privileged actions to ordinary accounts.
 
-This document is a design specification only. It does not create production admin privileges, change Firebase users, deploy a backend, or enable campaign operations.
+## Shared Firebase project boundary
+CONTENTNEX currently shares Firebase project `adnexa-8daea` with ADNEXA. To avoid accidentally granting privileges in another application, CONTENTNEX uses only the namespaced Firebase Custom Claim `contentnexRole`. It does not read a generic `role` claim.
 
-## Roles
-- `customer`: default role. Can manage only their own profile, drafts, and permitted workspace data.
-- `support`: limited support access. Read only the minimum customer/account metadata needed for support; no billing, credential, or campaign publishing permissions.
-- `admin`: operational administration, user status management, service configuration, and audit review. High-impact actions require confirmation and an audit record.
+- `customer`: default role.
+- `support`: limited support access; no billing, credentials, or campaign publishing permissions.
+- `super_admin`: CONTENTNEX operational owner role. This claim is scoped to CONTENTNEX and does not imply an ADNEXA role.
 
-No user may promote themselves or another user through a client-side field, local preference, request body, or editable Firestore document.
+No user may promote themselves through a client-side field, local preference, request body, or editable Firestore document.
 
 ## Trusted role assignment
 - Firebase Authentication remains the identity provider.
-- A trusted server-side administrative process assigns Firebase Custom Claims.
-- The backend verifies Firebase ID tokens and reads role claims from the verified token.
+- A trusted server-side administrative process assigns `contentnexRole: "super_admin"`.
+- The bootstrap utility verifies the configured project, exact UID, exact email, and verified-email status before changing claims.
+- Existing unrelated custom claims are preserved.
+- The backend verifies Firebase ID token signature, issuer, audience, expiry, verified email, and the CONTENTNEX-specific claim.
 - Client UI visibility is convenience only; every privileged API and database operation independently checks authorization.
-- Initial admin bootstrap must be performed manually by the project owner through a trusted server environment. Never ship an admin UID, password, service-account key, or bootstrap secret in the APK or repository.
+- Never ship an admin UID, password, service-account key, or bootstrap secret in the APK or repository.
 
 ## Access boundaries
 - Customer: own account and own content only.
 - Support: limited account lookup and support notes; no access to private content by default.
-- Admin: explicitly allowlisted operational endpoints. No unrestricted database console exposed through the mobile app.
+- Super Admin: explicitly allowlisted operational endpoints. No unrestricted database console exposed through the mobile app.
 - Backend: deny by default; validate token, role, resource ownership, request schema, and action-specific permission on every request.
 
 ## Admin workspace modules (phased)
@@ -43,31 +45,21 @@ No user may promote themselves or another user through a client-side field, loca
 ## Data and infrastructure
 - Firestore Security Rules must enforce customer ownership and deny unknown paths.
 - Server-side admin operations use least-privilege service identities.
-- Admin endpoints must verify Firebase token signature, issuer, audience, expiration, email verification where required, and role claim.
-- Add rate limits, structured error responses, monitoring, and automated authorization tests before deployment.
+- Admin endpoints verify token signature, issuer, audience, expiry, verified email, and the CONTENTNEX-specific role claim.
+- Add rate limits, structured error responses, monitoring, and automated authorization tests before deploying management endpoints.
 - Do not enable Firebase/Cloud billing or paid services without explicit owner approval.
 
 ## Release gates
 1. Approve the role matrix and admin capabilities.
 2. Implement server-side role verification and negative authorization tests.
 3. Add Firestore rules and emulator tests; prove customers cannot read or mutate another customer's records.
-4. Add an admin-only UI that remains unavailable to customer accounts.
+4. Connect an admin-only UI that stays unavailable to customer accounts.
 5. Review audit logging, data minimization, and recovery procedures.
-6. Deploy only after separate explicit approval.
+6. Deploy only after tests pass and the owner explicitly approves the target.
 
-## Current status
-- A prototype `/v1/admin/access-check` route and fail-closed role-claim reader exist in Worker source; they are not deployed.
-- No admin custom claims have been assigned.
-- No admin management APIs, user lookup, suspension, audit storage, or admin UI exist.
-- This design does not grant any account additional privileges.
-
-
-## Admin UI prototype status (2026-11-15)
-
-- Added a gated Admin Control Center screen to the Flutter app, reachable from the top-bar admin icon.
-- The screen shows the planned overview, user management, moderation, platform connection status, audit log, and configuration areas.
-- Metrics are intentionally shown as unavailable placeholders; no fabricated customer counts or audit events are displayed.
-- The screen clearly states that backend deployment and trusted Firebase admin custom claims are not yet configured.
-- All privileged operations remain unavailable. This UI is a navigation and layout prototype, not a production admin console.
-- A widget test verifies the gated status and key modules.
-- No backend deployment, custom-claim assignment, billing, or real user-data access was performed.
+## Current implementation status (2026-11-15)
+- Worker source contains a fail-closed `/v1/admin/access-check` route that reads only `contentnexRole`.
+- Generic Firebase claims such as `role: "admin"` do not grant CONTENTNEX access.
+- A secure, owner-run bootstrap utility is documented separately; it has not been run.
+- No custom claim has been assigned, Worker has not been deployed, and no live admin API or database-backed audit log exists.
+- The Admin Control Center remains a UI prototype with unavailable metrics and no privileged operations.
