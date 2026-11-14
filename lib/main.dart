@@ -14,7 +14,7 @@ class AdnexaApp extends StatelessWidget {
   const AdnexaApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'ADNEXA',
+    title: 'CONTENTNEX',
     debugShowCheckedModeBanner: false,
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -40,7 +40,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int index = 0;
   final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), AnalyticsPage()];
-  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'ADNEXA AI', 'Analytics'];
+  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'CONTENTNEX AI', 'Analytics'];
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -59,8 +59,8 @@ class _AppShellState extends State<AppShell> {
           ),
           const SizedBox(width: 11),
           const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('ADNEXA', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
-            Text('ADVERTISING INTELLIGENCE', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.4)),
+            Text('CONTENTNEX', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, letterSpacing: 2.2)),
+            Text('AI CONTENT BUSINESS STUDIO', style: TextStyle(fontSize: 8, color: muted, letterSpacing: 1.4)),
           ]),
           const Spacer(),
           IconButton(onPressed: () => notice(context, 'ระบบแจ้งเตือนจะเปิดใช้เมื่อเชื่อมต่อ Backend'), icon: const Icon(Icons.notifications_none_rounded)),
@@ -419,7 +419,7 @@ class AccountsPage extends StatelessWidget {
     const SizedBox(height: 6),
     const Text('Security principle', style: TextStyle(fontWeight: FontWeight.w700)),
     const SizedBox(height: 7),
-    const Text('ADNEXA จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อจริงจะใช้ OAuth ทางการและจัดเก็บ Token ฝั่งเซิร์ฟเวอร์เท่านั้น', style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
+    const Text('CONTENTNEX จะไม่ขอหรือเก็บรหัสผ่านบัญชีโฆษณาของคุณ การเชื่อมต่อจริงจะใช้ OAuth ทางการและจัดเก็บ Token ฝั่งเซิร์ฟเวอร์เท่านั้น', style: TextStyle(color: muted, fontSize: 12, height: 1.5)),
   ]);
 }
 
@@ -523,7 +523,7 @@ class _AiPageState extends State<AiPage> {
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
         SizedBox(height: 10),
-        Text('ADNEXA Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text('CONTENTNEX Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         SizedBox(height: 5),
         Text('วิเคราะห์เบื้องต้น วางกลุ่มเป้าหมาย และประเมินผลตามงบประมาณ', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
       ]),
