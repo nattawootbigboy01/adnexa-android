@@ -119,7 +119,7 @@ export async function verifyFirebaseIdToken(token, projectId) {
 
 async function authenticate(request, env) {
   const authorization = request.headers.get('Authorization') ?? '';
-  const match = authorization.match(/^Bearer\\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
   if (!match) return null;
   try {
     return await verifyFirebaseIdToken(match[1], env.FIREBASE_PROJECT_ID);
