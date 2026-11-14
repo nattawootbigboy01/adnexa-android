@@ -56,7 +56,7 @@ class _AppShellState extends State<AppShell> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               gradient: const LinearGradient(colors: [Color(0xFFB9A6FF), violet, Color(0xFF5634B8)]),
-              boxShadow: [BoxShadow(color: violet.withOpacity(.28), blurRadius: 18)],
+              boxShadow: [BoxShadow(color: violet.withValues(alpha: .28), blurRadius: 18)],
             ),
             child: const Icon(Icons.bolt_rounded, color: Colors.white),
           ),
@@ -80,7 +80,7 @@ class _AppShellState extends State<AppShell> {
     ])),
     bottomNavigationBar: NavigationBar(
       backgroundColor: const Color(0xFF10121A),
-      indicatorColor: violet.withOpacity(.2),
+      indicatorColor: violet.withValues(alpha: .2),
       selectedIndex: index,
       onDestinationSelected: (v) => setState(() => index = v),
       destinations: const [
@@ -113,7 +113,7 @@ class DemoNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(color: const Color(0xFF252033), borderRadius: BorderRadius.circular(13), border: Border.all(color: violet.withOpacity(.22))),
+    decoration: BoxDecoration(color: const Color(0xFF252033), borderRadius: BorderRadius.circular(13), border: Border.all(color: violet.withValues(alpha: .22))),
     child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(Icons.info_outline, color: Color(0xFFBBA8FF), size: 18),
       SizedBox(width: 9),
@@ -129,7 +129,7 @@ class MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withOpacity(.055))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.white.withValues(alpha: .055))),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Icon(icon, color: const Color(0xFFB8A5FF), size: 20),
       const SizedBox(height: 13),
@@ -166,8 +166,8 @@ class DashboardPage extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF302653), Color(0xFF171725), Color(0xFF11131B)]),
-        border: Border.all(color: violet.withOpacity(.3)),
-        boxShadow: [BoxShadow(color: violet.withOpacity(.12), blurRadius: 24, offset: const Offset(0, 10))],
+        border: Border.all(color: violet.withValues(alpha: .3)),
+        boxShadow: [BoxShadow(color: violet.withValues(alpha: .12), blurRadius: 24, offset: const Offset(0, 10))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('YOUR ADVERTISING,\nONE INTELLIGENT SPACE.', style: TextStyle(fontSize: 21, height: 1.25, fontWeight: FontWeight.w900, letterSpacing: .4)),
@@ -210,7 +210,7 @@ class QuickChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withOpacity(.06))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: .06))),
     child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 15, color: violet), const SizedBox(width: 7), Text(label, style: const TextStyle(fontSize: 11))]),
   );
 }
@@ -223,7 +223,7 @@ class PlatformTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 9),
     padding: const EdgeInsets.all(13),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withOpacity(.05))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(15), border: Border.all(color: Colors.white.withValues(alpha: .05))),
     child: Row(children: [
       Container(width: 38, height: 38, decoration: BoxDecoration(color: const Color(0xFF29243C), borderRadius: BorderRadius.circular(11)), child: Icon(icon, color: const Color(0xFFC4B3FF))),
       const SizedBox(width: 11),
@@ -318,7 +318,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 6),
     const Text('Platform', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: platform, items: ['Meta Ads', 'TikTok Ads', 'Google Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
+    DropdownButtonFormField<String>(initialValue: platform, items: ['Meta Ads', 'TikTok Ads', 'Google Ads'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => platform = v!)),
     const SizedBox(height: 15),
     const Text('Campaign name', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
@@ -326,7 +326,7 @@ class _CampaignPageState extends State<CampaignPage> {
     const SizedBox(height: 15),
     const Text('Objective', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
     const SizedBox(height: 7),
-    DropdownButtonFormField<String>(value: objective, items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => objective = v!)),
+    DropdownButtonFormField<String>(initialValue: objective, items: ['Awareness', 'Traffic', 'Engagement', 'Leads', 'Sales'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => objective = v!)),
     const SizedBox(height: 15),
     if (campaignMode == 'AI') ...[
       const SectionTitle('สินค้า/บริการที่ต้องการโปรโมต'),
@@ -342,9 +342,9 @@ class _CampaignPageState extends State<CampaignPage> {
       const SectionTitle('กลุ่มลูกค้า'),
       TextField(controller: manualAudience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น เจ้าของธุรกิจ / คนทำงาน')),
       const SectionTitle('ช่วงอายุ'),
-      DropdownButtonFormField<String>(value: manualAge, items: ['18–24 ปี', '25–44 ปี', '45–60 ปี', 'ทุกช่วงอายุ'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualAge = v ?? manualAge)),
+      DropdownButtonFormField<String>(initialValue: manualAge, items: ['18–24 ปี', '25–44 ปี', '45–60 ปี', 'ทุกช่วงอายุ'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualAge = v ?? manualAge)),
       const SectionTitle('เพศ'),
-      DropdownButtonFormField<String>(value: manualGender, items: ['ทุกเพศ', 'ชาย', 'หญิง'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualGender = v ?? manualGender)),
+      DropdownButtonFormField<String>(initialValue: manualGender, items: ['ทุกเพศ', 'ชาย', 'หญิง'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(), onChanged: (v) => setState(() => manualGender = v ?? manualGender)),
       const SectionTitle('ความสนใจ (ถ้ามี)'),
       TextField(controller: manualInterests, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น กาแฟ ร้านอาหาร ธุรกิจออนไลน์')),
     ],
@@ -390,7 +390,7 @@ class _ModeCard extends StatelessWidget {
     borderRadius: BorderRadius.circular(16),
     child: Container(
       padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(color: selected ? const Color(0xFF29213F) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withOpacity(.07), width: selected ? 1.5 : 1)),
+      decoration: BoxDecoration(color: selected ? const Color(0xFF29213F) : panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: selected ? violet : Colors.white.withValues(alpha: .07), width: selected ? 1.5 : 1)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icon, color: selected ? const Color(0xFFC7B5FF) : muted, size: 22), const SizedBox(height: 9), Text(title, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: selected ? Colors.white : muted)), const SizedBox(height: 4), Text(subtitle, style: const TextStyle(fontSize: 10, color: muted)), const SizedBox(height: 7), Text(selected ? 'SELECTED' : 'เลือกโหมดนี้', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: selected ? const Color(0xFFBCA9FF) : muted))]),
     ),
   );
@@ -586,7 +586,7 @@ class _AiPageState extends State<AiPage> {
     TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
     const SectionTitle('ประเภทงาน AI'),
     DropdownButtonFormField<String>(
-      value: selectedAiTask,
+      initialValue: selectedAiTask,
       items: const [
         DropdownMenuItem(value: 'council_strategy', child: Text('AI COUNCIL — กลยุทธ์คอนเทนต์')),
         DropdownMenuItem(value: 'copywriter', child: Text('AI COPYWRITER — ข้อความขาย')),
@@ -599,7 +599,7 @@ class _AiPageState extends State<AiPage> {
     ),
     const SectionTitle('4. โทนข้อความโฆษณา'),
     DropdownButtonFormField<String>(
-      value: tone,
+      initialValue: tone,
       items: ['เป็นกันเอง', 'มืออาชีพ', 'พรีเมียม', 'เร่งให้ตัดสินใจ'].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
       onChanged: (v) => setState(() => tone = v ?? tone),
     ),
@@ -668,7 +668,7 @@ class CardPanel extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.all(15),
-    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withOpacity(.055))),
+    decoration: BoxDecoration(color: panel, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: .055))),
     child: child,
   );
 }
