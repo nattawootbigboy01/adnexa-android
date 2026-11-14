@@ -37,7 +37,7 @@ class ManualPromptBuilder {
 
     final contextLines = request.context.entries
         .map((entry) => '- ${entry.key}: ${entry.value}')
-        .join('\\n');
+        .join('\n');
     final contextSection = contextLines.isEmpty
         ? 'ไม่มีข้อมูลบริบทเพิ่มเติม'
         : contextLines;
@@ -57,6 +57,6 @@ class ManualPromptBuilder {
       '',
       'คำสั่งจากผู้ใช้:',
       request.prompt.trim(),
-    ].join('\\n');
+    ].join('\n');
   }
 }
