@@ -9,6 +9,9 @@ const ALLOWED_TASKS = new Set([
   'content_plan',
   'quality_review',
 ]);
+const ALLOWED_REQUEST_FIELDS = new Set([
+  'task', 'prompt', 'languageCode', 'context', 'consent',
+]);
 
 const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body), {
@@ -84,6 +87,9 @@ export async function verifyFirebaseIdToken(token, projectId) {
     !Number.isFinite(claims.iat) ||
     claims.iat > now + 60 ||
     claims.iat < now - 3600 ||
+    !Number.isFinite(claims.auth_time) ||
+    claims.auth_time <= 0 ||
+    claims.auth_time > now + 60 ||
     claims.email_verified !== true
   ) {
     throw new Error('INVALID_TOKEN_CLAIMS');
@@ -104,7 +110,7 @@ export async function verifyFirebaseIdToken(token, projectId) {
 
 async function authenticate(request, env) {
   const authorization = request.headers.get('Authorization') ?? '';
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  const match = authorization.match(/^Bearer\\s+(.+)$/i);
   if (!match) return null;
   try {
     return await verifyFirebaseIdToken(match[1], env.FIREBASE_PROJECT_ID);
@@ -113,8 +119,12 @@ async function authenticate(request, env) {
   }
 }
 
-function validateAiRequest(body) {
+export function validateAiRequest(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'INVALID_BODY';
+
+  if (Object.keys(body).some((key) => !ALLOWED_REQUEST_FIELDS.has(key))) {
+    return 'UNKNOWN_REQUEST_FIELD';
+  }
   if (typeof body.task !== 'string' || !ALLOWED_TASKS.has(body.task)) {
     return 'INVALID_TASK';
   }
@@ -146,7 +156,13 @@ function validateAiRequest(body) {
       ) return 'INVALID_CONTEXT';
     }
   }
-  if (body.consent?.externalAiProcessing !== true) {
+  if (
+    !body.consent ||
+    typeof body.consent !== 'object' ||
+    Array.isArray(body.consent) ||
+    Object.keys(body.consent).some((key) => key !== 'externalAiProcessing') ||
+    body.consent.externalAiProcessing !== true
+  ) {
     return 'EXTERNAL_AI_CONSENT_REQUIRED';
   }
   return null;
