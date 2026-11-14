@@ -60,3 +60,14 @@ No user may promote themselves or another user through a client-side field, loca
 - No admin custom claims have been assigned.
 - No admin management APIs, user lookup, suspension, audit storage, or admin UI exist.
 - This design does not grant any account additional privileges.
+
+
+## Admin UI prototype status (2026-11-15)
+
+- Added a gated Admin Control Center screen to the Flutter app, reachable from the top-bar admin icon.
+- The screen shows the planned overview, user management, moderation, platform connection status, audit log, and configuration areas.
+- Metrics are intentionally shown as unavailable placeholders; no fabricated customer counts or audit events are displayed.
+- The screen clearly states that backend deployment and trusted Firebase admin custom claims are not yet configured.
+- All privileged operations remain unavailable. This UI is a navigation and layout prototype, not a production admin console.
+- A widget test verifies the gated status and key modules.
+- No backend deployment, custom-claim assignment, billing, or real user-data access was performed.
