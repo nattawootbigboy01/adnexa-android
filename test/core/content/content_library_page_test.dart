@@ -29,7 +29,7 @@ void main() {
       createdAt: DateTime.utc(2026, 11, 14),
     ));
 
-    await tester.pumpWidget(const MaterialApp(home: ContentLibraryPage()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: ContentLibraryPage())));
     await tester.pumpAndSettle();
 
     expect(find.text('โพสต์ร้านกาแฟ'), findsOneWidget);
@@ -63,7 +63,7 @@ void main() {
       createdAt: DateTime.utc(2026, 11, 14),
     ));
 
-    await tester.pumpWidget(const MaterialApp(home: ContentLibraryPage()));
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: ContentLibraryPage())));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(DropdownButtonFormField<String>));
