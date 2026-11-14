@@ -86,7 +86,7 @@ class _SetupRequired extends StatelessWidget {
               children: [
                 const Icon(Icons.lock_outline, size: 48, color: Color(0xFFB8A5FF)),
                 const SizedBox(height: 16),
-                const Text('ตั้งค่าระบบบัญชี ADNEXA',
+                const Text('ตั้งค่าระบบบัญชี CONTENTNEX',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                     textAlign: TextAlign.center),
                 const SizedBox(height: 10),
@@ -238,7 +238,7 @@ class _EmailAuthPageState extends State<EmailAuthPage> {
                     const Icon(Icons.bolt_rounded,
                         size: 52, color: Color(0xFFB8A5FF)),
                     const SizedBox(height: 12),
-                    const Text('ADNEXA',
+                    const Text('CONTENTNEX',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: 28,
@@ -454,7 +454,7 @@ class _AuthScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'ADNEXA',
+        title: 'CONTENTNEX',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           brightness: Brightness.dark,
