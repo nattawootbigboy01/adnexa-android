@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/admin-member-management-20261111
+      - chore/flutter-lint-cleanup-20261113
   workflow_dispatch:
 
 permissions:
@@ -106,7 +107,7 @@ jobs:
               <path android:fillColor="#080B10" android:pathData="M0,0h108v108h-108z"/>
               <path android:fillColor="#DDE5EF" android:pathData="M15,82 L42,22 Q45,16 50,22 L77,82 L63,82 L46,43 L29,82 Z"/>
               <path android:fillColor="#258BFF" android:pathData="M55,69 L70,54 L78,61 L96,39 L96,57 L78,77 L70,69 L61,79 Z"/>
-            </vector>
+          </vector>
           EOF
           python3 - <<'PY'
           from pathlib import Path
