@@ -56,7 +56,7 @@ No user may promote themselves or another user through a client-side field, loca
 6. Deploy only after separate explicit approval.
 
 ## Current status
-- No production admin role enforcement exists.
+- A prototype `/v1/admin/access-check` route and fail-closed role-claim reader exist in Worker source; they are not deployed.
 - No admin custom claims have been assigned.
-- No admin API is deployed.
+- No admin management APIs, user lookup, suspension, audit storage, or admin UI exist.
 - This design does not grant any account additional privileges.
