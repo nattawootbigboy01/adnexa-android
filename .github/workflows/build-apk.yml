@@ -1,4 +1,4 @@
-name: Build ADNEXA APK
+name: Build CONTENTNEX APK
 
 on:
   workflow_dispatch:
@@ -24,7 +24,7 @@ jobs:
           cache: true
       - name: Generate Android project files
         run: flutter create . --platforms=android --project-name adnexa
-      - name: Apply ADNEXA launcher icon and app name
+      - name: Apply CONTENTNEX app name
         run: |
           mkdir -p android/app/src/main/res/drawable
           cat > android/app/src/main/res/drawable/ic_adnexa.xml <<'EOF'
