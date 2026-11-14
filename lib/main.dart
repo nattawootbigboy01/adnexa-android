@@ -39,7 +39,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), ผลลัพธ์คอนเทนต์Page()];
+  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), AnalyticsPage()];
   final titles = const ['ภาพรวมธุรกิจคอนเทนต์', 'Content Studio', 'ศูนย์เชื่อมต่อแพลตฟอร์ม', 'CONTENTNEX AI', 'ผลลัพธ์คอนเทนต์'];
 
   @override
@@ -81,9 +81,9 @@ class _AppShellState extends State<AppShell> {
       selectedIndex: index,
       onDestinationSelected: (v) => setState(() => index = v),
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
+        NavigationDestination(icon: Icon(Icons.grid_view_rounded), label: 'หน้าหลัก'),
         NavigationDestination(icon: Icon(Icons.campaign_outlined), label: 'คอนเทนต์'),
-        NavigationDestination(icon: Icon(Icons.link_rounded), label: 'Accounts'),
+        NavigationDestination(icon: Icon(Icons.link_rounded), label: 'บัญชี'),
         NavigationDestination(icon: Icon(Icons.auto_awesome), label: 'AI'),
         NavigationDestination(icon: Icon(Icons.query_stats), label: 'สถิติ'),
       ],
@@ -189,7 +189,7 @@ class DashboardPage extends StatelessWidget {
     const SectionTitle('แพลตฟอร์มสำหรับเผยแพร่'),
     const PlatformTile(name: 'Meta Ads', subtitle: 'Facebook & Instagram', icon: Icons.facebook, status: 'Not connected'),
     const PlatformTile(name: 'TikTok Ads', subtitle: 'TikTok for Business', icon: Icons.music_note, status: 'Not connected'),
-    const PlatformTile(name: 'ช่องทางอื่น (ภายหลัง)', subtitle: 'Search, Display & YouTube', icon: Icons.ads_click, status: 'Not connected'),
+    
     const SectionTitle('Quick tools'),
     const Wrap(spacing: 8, runSpacing: 8, children: [
       QuickChip(icon: Icons.auto_awesome, label: 'AI creative'),
@@ -402,7 +402,7 @@ class AccountsPage extends StatelessWidget {
     for (final p in const [
       ['Meta Ads', 'Facebook & Instagram campaign accounts', 'Meta'],
       ['TikTok Ads', 'TikTok for Business advertiser accounts', 'TikTok'],
-      ['ช่องทางอื่น (ภายหลัง)', 'Google Search, Display and YouTube', 'Google'],
+      ['TikTok', 'TikTok for Business', 'TikTok'],
     ])
       CardPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(p[0], style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
@@ -523,7 +523,7 @@ class _AiPageState extends State<AiPage> {
       child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.auto_awesome, color: Color(0xFFC7B5FF), size: 25),
         SizedBox(height: 10),
-        Text('CONTENTNEX Campaign Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text('CONTENTNEX Content Planner', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         SizedBox(height: 5),
         Text('วิเคราะห์เบื้องต้น วางกลุ่มเป้าหมาย และประเมินผลตามงบประมาณ', style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
       ]),
@@ -565,11 +565,11 @@ class _AiPageState extends State<AiPage> {
   ]);
 }
 
-class ผลลัพธ์คอนเทนต์Page extends StatelessWidget {
-  const ผลลัพธ์คอนเทนต์Page({super.key});
+class AnalyticsPage extends StatelessWidget {
+  const AnalyticsPage({super.key});
   @override
   Widget build(BuildContext context) => PageBody(children: [
-    const Text('Campaign performance overview', style: TextStyle(color: muted, fontSize: 12)),
+    const Text('ภาพรวมผลลัพธ์คอนเทนต์', style: TextStyle(color: muted, fontSize: 12)),
     const SectionTitle('Key metrics'),
     const MetricCard(label: 'Reach', value: '28,640', delta: 'Demo metric', icon: Icons.groups_outlined),
     const SizedBox(height: 9),
