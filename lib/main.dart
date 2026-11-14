@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'auth_gate.dart';
+import 'core/ai/ai_request.dart';
+import 'core/ai/manual_prompt_builder.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const AdnexaApp());
@@ -434,6 +437,7 @@ class _AiPageState extends State<AiPage> {
   final audience = TextEditingController();
   final budget = TextEditingController(text: '300');
   String tone = 'เป็นกันเอง';
+  String selectedAiTask = 'copywriter';
   String? output;
   String? audiencePlan;
   String? estimate;
@@ -512,6 +516,52 @@ class _AiPageState extends State<AiPage> {
     });
   }
 
+  Future<void> prepareManualGeminiPrompt() async {
+    final item = product.text.trim();
+    if (item.isEmpty) {
+      notice(context, 'กรุณาระบุสินค้าหรือบริการก่อน');
+      return;
+    }
+    final request = AiRequest(
+      task: selectedAiTask,
+      prompt: 'ช่วยสร้างคอนเทนต์สำหรับสินค้า/บริการ: $item\\n'
+          'กลุ่มลูกค้า: ${audience.text.trim().isEmpty ? 'ยังไม่ระบุ' : audience.text.trim()}\\n'
+          'โทนภาษา: $tone\\n'
+          'งบโฆษณาที่วางแผน: ${budget.text.trim()} บาทต่อวัน',
+      languageCode: 'th',
+      context: {'productOrService': item, 'tone': tone},
+    );
+    final prompt = const ManualPromptBuilder().build(request);
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Prompt พร้อมใช้กับ Gemini'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: SelectableText(prompt, style: const TextStyle(fontSize: 12, height: 1.5)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('ปิด'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: prompt));
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              if (mounted) notice(context, 'คัดลอก Prompt แล้ว เปิด Gemini แล้ววางข้อความได้เลย');
+            },
+            icon: const Icon(Icons.copy),
+            label: const Text('คัดลอก Prompt'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => PageBody(children: [
     Container(
@@ -534,6 +584,19 @@ class _AiPageState extends State<AiPage> {
     TextField(controller: audience, maxLines: 2, decoration: const InputDecoration(hintText: 'เช่น คนทำงานอายุ 25–40 ปี ในขอนแก่น (ไม่บังคับ)')),
     const SectionTitle('3. งบประมาณต่อวัน (บาท)'),
     TextField(controller: budget, keyboardType: TextInputType.number, decoration: const InputDecoration(prefixText: '฿  ', hintText: '300')),
+    const SectionTitle('ประเภทงาน AI'),
+    DropdownButtonFormField<String>(
+      value: selectedAiTask,
+      items: const [
+        DropdownMenuItem(value: 'council_strategy', child: Text('AI COUNCIL — กลยุทธ์คอนเทนต์')),
+        DropdownMenuItem(value: 'copywriter', child: Text('AI COPYWRITER — ข้อความขาย')),
+        DropdownMenuItem(value: 'poster_brief', child: Text('POSTER STUDIO — แนวคิดโปสเตอร์')),
+        DropdownMenuItem(value: 'video_script', child: Text('VIDEO SCRIPT — บทวิดีโอ')),
+        DropdownMenuItem(value: 'content_plan', child: Text('CONTENT PLANNER — ตารางโพสต์')),
+        DropdownMenuItem(value: 'quality_review', child: Text('QUALITY CONTROLLER — ตรวจคุณภาพ')),
+      ],
+      onChanged: (value) => setState(() => selectedAiTask = value ?? selectedAiTask),
+    ),
     const SectionTitle('4. โทนข้อความโฆษณา'),
     DropdownButtonFormField<String>(
       value: tone,
@@ -549,6 +612,19 @@ class _AiPageState extends State<AiPage> {
         label: const Text('วิเคราะห์และวางแผนโฆษณา'),
         style: FilledButton.styleFrom(backgroundColor: violet, padding: const EdgeInsets.symmetric(vertical: 14)),
       ),
+    ),
+    const SizedBox(height: 9),
+    SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: prepareManualGeminiPrompt,
+        icon: const Icon(Icons.content_copy),
+        label: const Text('เตรียม Prompt เพื่อใช้กับบัญชี Gemini ของฉัน'),
+      ),
+    ),
+    const Text(
+      'โหมด Manual: แอปจะเตรียมข้อความให้เท่านั้น ไม่เชื่อมต่อหรือส่งข้อมูลไป Gemini อัตโนมัติ คุณเป็นผู้เปิด Gemini และเลือกวาง Prompt เอง',
+      style: TextStyle(color: muted, fontSize: 10, height: 1.5),
     ),
     if (audiencePlan != null) ...[
       const SectionTitle('ผลวิเคราะห์กลุ่มเป้าหมาย'),
