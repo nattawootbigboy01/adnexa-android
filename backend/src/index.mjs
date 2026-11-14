@@ -9,6 +9,7 @@ const ALLOWED_TASKS = new Set([
   'content_plan',
   'quality_review',
 ]);
+const TRUSTED_ROLES = new Set(['customer', 'support', 'admin']);
 const ALLOWED_REQUEST_FIELDS = new Set([
   'task', 'prompt', 'languageCode', 'context', 'consent',
 ]);
@@ -57,6 +58,12 @@ async function loadSigningKey(kid) {
     false,
     ['verify'],
   );
+}
+
+/** Read only server-verified Firebase custom claims; unknown/missing roles fail closed. */
+export function getTrustedRole(claims) {
+  if (!claims || typeof claims !== 'object' || Array.isArray(claims)) return 'customer';
+  return TRUSTED_ROLES.has(claims.role) ? claims.role : 'customer';
 }
 
 /** Verify Firebase Authentication ID token and return trusted claims. */
@@ -187,6 +194,21 @@ export default {
         version: '0.1.0',
         aiProviderEnabled: false,
       }, 200, headers);
+    }
+
+    if (url.pathname === '/v1/admin/access-check' && request.method === 'GET') {
+      if (!env.FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'SERVER_NOT_CONFIGURED' } }, 503, headers);
+      }
+      const claims = await authenticate(request, env);
+      if (!claims) {
+        return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
+      }
+      const role = getTrustedRole(claims);
+      if (role !== 'admin') {
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
+      return json({ authorized: true, role: 'admin' }, 200, headers);
     }
 
     if (url.pathname === '/v1/ai/generate' && request.method === 'POST') {
