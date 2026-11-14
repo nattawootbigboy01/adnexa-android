@@ -18,6 +18,10 @@ on:
       - "pubspec.lock"
       - ".github/workflows/flutter-checks.yml"
 
+concurrency:
+  group: contentnex-flutter-checks-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
