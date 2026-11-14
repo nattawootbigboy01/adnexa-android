@@ -34,6 +34,7 @@ No paid service is needed for local tests. Installing Wrangler is a development 
 
 - Gemini is not called and no prompt is forwarded to Google.
 - No user data is persisted.
-- No admin role or content database is implemented yet.
+- `GET /v1/admin/access-check`: requires a valid, verified Firebase ID token and the server-verified Firebase custom claim `role: admin`; missing or unknown roles fail closed to `customer`. It returns only an authorization result and does not expose account data.
+- Admin authorization is implemented as a prototype gate only. No admin custom claims are assigned, no admin management APIs or database are available, and no admin UI is implemented.
 - This Worker does not create, edit, or publish ad campaigns.
 - No API key or other secret is present in this repository.
