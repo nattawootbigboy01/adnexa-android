@@ -8,17 +8,17 @@ Use the existing Cloudflare D1 database named `adnexa-auth-db`. Do not create a 
 
 The CONTENTNEX Worker can bind to the same D1 database while keeping its audit data in a separate table named `admin_audit_logs`. The existing ADNEXA OAuth table `oauth_states` is not modified by this migration.
 
-Add this binding to `backend/wrangler.toml`, replacing the placeholder with the actual D1 database ID shown in Cloudflare Dashboard:
+Add this binding to `backend/wrangler.toml`, using the verified D1 database ID:
 
 ```toml
 [[d1_databases]]
 binding = "ADMIN_DB"
 database_name = "adnexa-auth-db"
-database_id = "REPLACE_WITH_EXISTING_ADNEXA_AUTH_DB_ID"
+database_id = "e6d29a02-a710-4ce4-87f9-4701224201ee"
 migrations_dir = "migrations"
 ```
 
-Do not deploy while the database ID is still a placeholder. The database ID must be copied from the existing `adnexa-auth-db` database details page, not guessed.
+The binding has been added to `backend/wrangler.toml` using the database ID supplied by the user. Confirm the ID in Cloudflare before applying the remote migration.
 
 From the `backend` directory, apply the migration to the existing remote database:
 
