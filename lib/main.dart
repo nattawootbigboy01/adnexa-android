@@ -7,7 +7,6 @@ import 'core/ai/manual_prompt_builder.dart';
 import 'core/content/content_item.dart';
 import 'core/content/content_library_store.dart';
 import 'core/content/content_library_page.dart';
-import 'core/admin/admin_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() => runApp(const AdnexaApp());
@@ -46,8 +45,8 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
-  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), ContentLibraryPage(), AnalyticsPage(), AdminPage()];
-  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'CONTENTNEX AI', 'Content Library', 'Analytics', 'Admin Control Center'];
+  final pages = const [DashboardPage(), CampaignPage(), AccountsPage(), AiPage(), ContentLibraryPage(), AnalyticsPage()];
+  final titles = const ['Overview', 'Campaign Studio', 'Account Center', 'CONTENTNEX AI', 'Content Library', 'Analytics'];
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -71,7 +70,6 @@ class _AppShellState extends State<AppShell> {
           ]),
           const Spacer(),
           IconButton(onPressed: () => notice(context, 'ระบบแจ้งเตือนจะเปิดใช้เมื่อเชื่อมต่อ Backend'), icon: const Icon(Icons.notifications_none_rounded)),
-          IconButton(tooltip: 'Admin Control Center', onPressed: () => setState(() => index = 6), icon: const Icon(Icons.admin_panel_settings_outlined)),
           IconButton(tooltip: 'ออกจากระบบ', onPressed: () async { await FirebaseAuth.instance.signOut(); }, icon: const Icon(Icons.logout_rounded)),
           const CircleAvatar(radius: 17, backgroundColor: Color(0xFF29243C), child: Icon(Icons.person_outline, size: 19, color: Color(0xFFC7B8FF))),
         ]),
