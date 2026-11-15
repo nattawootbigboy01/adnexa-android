@@ -146,6 +146,12 @@ class _AdminDashboard extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.1,
                             fontSize: 14)),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: 'ออกจากระบบ',
+                      onPressed: () => FirebaseAuth.instance.signOut(),
+                      icon: const Icon(Icons.logout_rounded),
+                    ),
                   ]),
                   SizedBox(height: 12),
                   Text('จัดการและกำกับดูแล CONTENTNEX',
