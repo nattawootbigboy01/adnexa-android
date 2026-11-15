@@ -134,14 +134,14 @@ class _AdminDashboard extends StatelessWidget {
                 ),
                 border: Border.all(color: _adminAccent.withValues(alpha: .3)),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
-                    Icon(Icons.admin_panel_settings_outlined,
+                    const Icon(Icons.admin_panel_settings_outlined,
                         color: Color(0xFFC7B5FF), size: 27),
-                    SizedBox(width: 10),
-                    Text('ADMIN CONTROL CENTER',
+                    const SizedBox(width: 10),
+                    const Text('ADMIN CONTROL CENTER',
                         style: TextStyle(
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.1,
@@ -153,11 +153,11 @@ class _AdminDashboard extends StatelessWidget {
                       icon: const Icon(Icons.logout_rounded),
                     ),
                   ]),
-                  SizedBox(height: 12),
-                  Text('จัดการและกำกับดูแล CONTENTNEX',
+                  const SizedBox(height: 12),
+                  const Text('จัดการและกำกับดูแล CONTENTNEX',
                       style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                  SizedBox(height: 5),
-                  Text('ยืนยันสิทธิ์ CONTENTNEX Super Admin แล้ว',
+                  const SizedBox(height: 5),
+                  const Text('ยืนยันสิทธิ์ CONTENTNEX Super Admin แล้ว',
                       style: TextStyle(color: Color(0xFFC5BEDA), fontSize: 11)),
                 ],
               ),
