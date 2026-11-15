@@ -1,0 +1,68 @@
+name: Build CONTENTNEX ADMIN APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-admin:
+    runs-on: ubuntu-latest
+    env:
+      ADMIN_FIREBASE_API_KEY: ${{ vars.ADMIN_FIREBASE_API_KEY }}
+      ADMIN_FIREBASE_APP_ID: ${{ vars.ADMIN_FIREBASE_APP_ID }}
+      ADMIN_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.ADMIN_FIREBASE_MESSAGING_SENDER_ID }}
+      ADMIN_FIREBASE_PROJECT_ID: ${{ vars.ADMIN_FIREBASE_PROJECT_ID }}
+      ADMIN_API_BASE_URL: ${{ vars.ADMIN_API_BASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate admin build configuration
+        run: |
+          for key in ADMIN_FIREBASE_API_KEY ADMIN_FIREBASE_APP_ID ADMIN_FIREBASE_MESSAGING_SENDER_ID ADMIN_FIREBASE_PROJECT_ID ADMIN_API_BASE_URL; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing repository variable: $key"
+              exit 1
+            fi
+          done
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.9"
+          channel: stable
+          cache: true
+      - name: Generate isolated Android runner
+        run: |
+          flutter create --platforms=android --org com.contentnex --project-name contentnex_admin /tmp/contentnex_admin_runner
+          cp -R /tmp/contentnex_admin_runner/android admin_app/android
+          sed -i 's/android:label="contentnex_admin"/android:label="CONTENTNEX ADMIN"/' admin_app/android/app/src/main/AndroidManifest.xml
+      - name: Install dependencies
+        working-directory: admin_app
+        run: flutter pub get
+      - name: Analyze admin app
+        working-directory: admin_app
+        run: flutter analyze --no-fatal-infos
+      - name: Run admin app tests
+        working-directory: admin_app
+        run: flutter test
+      - name: Build separate admin APK
+        working-directory: admin_app
+        run: |
+          flutter build apk --release \
+            --dart-define=ADMIN_FIREBASE_API_KEY="$ADMIN_FIREBASE_API_KEY" \
+            --dart-define=ADMIN_FIREBASE_APP_ID="$ADMIN_FIREBASE_APP_ID" \
+            --dart-define=ADMIN_FIREBASE_MESSAGING_SENDER_ID="$ADMIN_FIREBASE_MESSAGING_SENDER_ID" \
+            --dart-define=ADMIN_FIREBASE_PROJECT_ID="$ADMIN_FIREBASE_PROJECT_ID" \
+            --dart-define=ADMIN_API_BASE_URL="$ADMIN_API_BASE_URL"
+      - name: Upload admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: contentnex-admin-android-apk
+          path: admin_app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
