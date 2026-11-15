@@ -1,5 +1,5 @@
--- CONTENTNEX admin audit trail. Use a dedicated D1 database binding named ADMIN_DB.
--- Do not point this binding at ADNEXA's authentication database.
+-- CONTENTNEX admin audit trail in the shared D1 database.
+-- This creates a separate table and leaves ADNEXA's oauth_states table unchanged.
 CREATE TABLE IF NOT EXISTS admin_audit_logs (
   id TEXT PRIMARY KEY NOT NULL,
   actor_uid TEXT NOT NULL,
