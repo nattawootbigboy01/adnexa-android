@@ -2,6 +2,12 @@ name = "contentnex-api"
 main = "src/index.mjs"
 compatibility_date = "2025-01-01"
 
+[[d1_databases]]
+binding = "ADMIN_DB"
+database_name = "adnexa-auth-db"
+database_id = "e6d29a02-a710-4ce4-87f9-4701224201ee"
+migrations_dir = "migrations"
+
 [vars]
 FIREBASE_PROJECT_ID = "adnexa-8daea"
 
