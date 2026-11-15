@@ -18,9 +18,10 @@ Use a dedicated Firebase project for the administrator app. Supply these build-t
 - `ADMIN_FIREBASE_APP_ID`
 - `ADMIN_FIREBASE_MESSAGING_SENDER_ID`
 - `ADMIN_FIREBASE_PROJECT_ID`
+- `ADMIN_API_BASE_URL` (HTTPS base URL of the deployed CONTENTNEX Worker)
 
 Do not put service-account credentials or private API secrets in the app.
 
 ## Current limitations
 
-This is an initial UI/authentication scaffold. The separate Firebase project, Android platform runner/package ID, admin account provisioning in that project, API integration, and release build still need to be completed. Do not distribute this scaffold as a production admin app.
+This is an initial UI/authentication scaffold. The app now requires a successful `GET /v1/admin/access-check` response from the Worker after checking the Firebase custom claim. The separate Firebase project, Android platform runner/package ID, admin account provisioning in that project, Worker environment configuration, and release build still need to be completed. The dashboard is not production-ready and must not be distributed until those steps and tests are complete.
