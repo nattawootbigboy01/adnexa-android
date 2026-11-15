@@ -1,6 +1,6 @@
 # CONTENTNEX Admin Backend Setup
 
-This change adds a protected, read-only admin audit-log API. It does not deploy the Worker or create Cloudflare resources.
+This change adds a protected, read-only admin audit-log API and a separate admin app scaffold. Admin API authentication must use a dedicated Firebase project through `ADMIN_FIREBASE_PROJECT_ID`; customer API authentication continues to use `FIREBASE_PROJECT_ID`. It does not deploy the Worker or create Firebase/Cloudflare resources.
 
 ## Reuse the existing ADNEXA D1 database
 
@@ -27,6 +27,10 @@ npx wrangler d1 migrations apply adnexa-auth-db --remote
 ```
 
 This applies the new `admin_audit_logs` table and its indexes. It must not drop, rename, or alter the existing `oauth_states` table.
+
+## Separate administrator Firebase project
+
+Create a dedicated Firebase project for CONTENTNEX ADMIN. Register only the admin Android app in that project and configure its Firebase Auth email/password provider. Do not enable public admin registration. Provision the approved administrator account and assign the CONTENTNEX `contentnexRole=super_admin` claim in that project only. Then set the Cloudflare Worker variable `ADMIN_FIREBASE_PROJECT_ID` to that project's exact project ID. Until this variable is configured, admin endpoints intentionally return `ADMIN_AUTH_NOT_CONFIGURED` (503). The admin app reads its own Firebase settings from `ADMIN_FIREBASE_API_KEY`, `ADMIN_FIREBASE_APP_ID`, `ADMIN_FIREBASE_MESSAGING_SENDER_ID`, and `ADMIN_FIREBASE_PROJECT_ID` build-time values. Do not reuse the customer app's Firebase configuration for the final admin release.
 
 ## API
 
