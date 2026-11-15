@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { getTrustedRole, validateAiRequest } from '../src/index.mjs';
 
-const env = { FIREBASE_PROJECT_ID: 'adnexa-8daea' };
+const env = {
+  FIREBASE_PROJECT_ID: 'adnexa-8daea',
+  // Test-only project value. Production must use a dedicated admin Firebase project.
+  ADMIN_FIREBASE_PROJECT_ID: 'contentnex-admin-test',
+};
 
 test('health endpoint reports service status without enabling AI', async () => {
   const response = await worker.fetch(
@@ -15,6 +19,7 @@ test('health endpoint reports service status without enabling AI', async () => {
   assert.equal(body.service, 'contentnex-api');
   assert.equal(body.version, '0.3.0');
   assert.equal(body.adminAuditConfigured, false);
+  assert.equal(body.adminAuthConfigured, true);
   assert.equal(body.aiProviderEnabled, false);
 });
 
