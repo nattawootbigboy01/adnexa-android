@@ -13,7 +13,8 @@ test('health endpoint reports service status without enabling AI', async () => {
 
   assert.equal(response.status, 200);
   assert.equal(body.service, 'contentnex-api');
-  assert.equal(body.version, '0.2.0');
+  assert.equal(body.version, '0.3.0');
+  assert.equal(body.adminAuditConfigured, false);
   assert.equal(body.aiProviderEnabled, false);
 });
 
@@ -116,6 +117,29 @@ test('admin access-check is read-only and does not accept role from query or bod
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ contentnexRole: 'super_admin' }),
+    }),
+    env,
+  );
+  assert.equal(response.status, 404);
+});
+
+
+test('admin audit log endpoint rejects missing Firebase bearer token', async () => {
+  const response = await worker.fetch(
+    new Request('https://contentnex-api.test/v1/admin/audit-logs'),
+    env,
+  );
+  const body = await response.json();
+  assert.equal(response.status, 401);
+  assert.equal(body.error.code, 'UNAUTHENTICATED');
+});
+
+test('admin audit log endpoint does not expose data through unsupported methods', async () => {
+  const response = await worker.fetch(
+    new Request('https://contentnex-api.test/v1/admin/audit-logs', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ actorUid: 'forged', action: 'admin.grant' }),
     }),
     env,
   );
