@@ -20,6 +20,26 @@ const json = (body, status = 200, headers = {}) =>
     headers: { 'content-type': 'application/json; charset=utf-8', ...headers },
   });
 
+async function writeAdminAudit(env, claims, action, outcome = 'success', details = {}) {
+  if (!env.ADMIN_DB) return false;
+  const safeDetails = JSON.stringify(details);
+  await env.ADMIN_DB.prepare(
+    `INSERT INTO admin_audit_logs
+      (id, actor_uid, action, resource_type, resource_id, outcome, details_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(
+    crypto.randomUUID(),
+    claims.sub,
+    action,
+    'admin',
+    null,
+    outcome,
+    safeDetails,
+    Math.floor(Date.now() / 1000),
+  ).run();
+  return true;
+}
+
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin');
   if (!origin || !env.APP_ORIGIN || origin !== env.APP_ORIGIN) return {};
@@ -193,8 +213,9 @@ export default {
       return json({
         status: 'ok',
         service: 'contentnex-api',
-        version: '0.2.0',
+        version: '0.3.0',
         aiProviderEnabled: false,
+        adminAuditConfigured: Boolean(env.ADMIN_DB),
       }, 200, headers);
     }
 
@@ -210,7 +231,70 @@ export default {
       if (role !== 'super_admin') {
         return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
       }
-      return json({ authorized: true, role: 'super_admin' }, 200, headers);
+      let auditLogged = false;
+      if (env.ADMIN_DB) {
+        try {
+          auditLogged = await writeAdminAudit(env, claims, 'admin.access_check', 'success');
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+      }
+      return json({
+        authorized: true,
+        role: 'super_admin',
+        auditLogged,
+        auditLogConfigured: Boolean(env.ADMIN_DB),
+      }, 200, headers);
+    }
+
+    if (url.pathname === '/v1/admin/audit-logs' && request.method === 'GET') {
+      if (!env.FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'SERVER_NOT_CONFIGURED' } }, 503, headers);
+      }
+      const claims = await authenticate(request, env);
+      if (!claims) {
+        return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
+      }
+      if (getTrustedRole(claims) !== 'super_admin') {
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
+      if (!env.ADMIN_DB) {
+        return json({
+          error: {
+            code: 'ADMIN_DATABASE_NOT_CONFIGURED',
+            message: 'Admin audit database is not connected.',
+          },
+        }, 503, headers);
+      }
+
+      const requestedLimit = Number(url.searchParams.get('limit') ?? 50);
+      const limit = Number.isInteger(requestedLimit)
+        ? Math.min(Math.max(requestedLimit, 1), 100)
+        : 50;
+      try {
+        await writeAdminAudit(env, claims, 'admin.audit_logs.read', 'success', { limit });
+        const result = await env.ADMIN_DB.prepare(
+          `SELECT id, actor_uid, action, resource_type, resource_id, outcome, details_json, created_at
+           FROM admin_audit_logs
+           ORDER BY created_at DESC
+           LIMIT ?`,
+        ).bind(limit).all();
+        return json({
+          items: (result.results ?? []).map((row) => ({
+            id: row.id,
+            actorUid: row.actor_uid,
+            action: row.action,
+            resourceType: row.resource_type,
+            resourceId: row.resource_id,
+            outcome: row.outcome,
+            details: row.details_json ? JSON.parse(row.details_json) : {},
+            createdAt: row.created_at,
+          })),
+          limit,
+        }, 200, headers);
+      } catch {
+        return json({ error: { code: 'AUDIT_LOG_READ_FAILED' } }, 503, headers);
+      }
     }
 
     if (url.pathname === '/v1/ai/generate' && request.method === 'POST') {
