@@ -137,12 +137,12 @@ export async function verifyFirebaseIdToken(token, projectId) {
   return claims;
 }
 
-async function authenticate(request, env) {
+async function authenticate(request, env, projectId = env.FIREBASE_PROJECT_ID) {
   const authorization = request.headers.get('Authorization') ?? '';
   const match = authorization.match(/^Bearer\s+(.+)$/i);
-  if (!match) return null;
+  if (!match || !projectId) return null;
   try {
-    return await verifyFirebaseIdToken(match[1], env.FIREBASE_PROJECT_ID);
+    return await verifyFirebaseIdToken(match[1], projectId);
   } catch {
     return null;
   }
@@ -216,14 +216,15 @@ export default {
         version: '0.3.0',
         aiProviderEnabled: false,
         adminAuditConfigured: Boolean(env.ADMIN_DB),
+        adminAuthConfigured: Boolean(env.ADMIN_FIREBASE_PROJECT_ID),
       }, 200, headers);
     }
 
     if (url.pathname === '/v1/admin/access-check' && request.method === 'GET') {
-      if (!env.FIREBASE_PROJECT_ID) {
-        return json({ error: { code: 'SERVER_NOT_CONFIGURED' } }, 503, headers);
+      if (!env.ADMIN_FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
       }
-      const claims = await authenticate(request, env);
+      const claims = await authenticate(request, env, env.ADMIN_FIREBASE_PROJECT_ID);
       if (!claims) {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
       }
@@ -248,10 +249,10 @@ export default {
     }
 
     if (url.pathname === '/v1/admin/audit-logs' && request.method === 'GET') {
-      if (!env.FIREBASE_PROJECT_ID) {
-        return json({ error: { code: 'SERVER_NOT_CONFIGURED' } }, 503, headers);
+      if (!env.ADMIN_FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
       }
-      const claims = await authenticate(request, env);
+      const claims = await authenticate(request, env, env.ADMIN_FIREBASE_PROJECT_ID);
       if (!claims) {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
       }
