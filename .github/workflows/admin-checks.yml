@@ -1,0 +1,35 @@
+name: CONTENTNEX ADMIN Flutter Checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/contentnex-admin-app-split-20261116
+    paths:
+      - "admin_app/**"
+      - ".github/workflows/admin-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  admin-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin_app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.9"
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: flutter pub get
+      - name: Analyze admin app
+        run: flutter analyze --no-fatal-infos
+      - name: Run admin app tests
+        run: flutter test
