@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'admin_users_page.dart';
+
 const _adminBg = Color(0xFF08090D);
 const _adminPanel = Color(0xFF141620);
 const _adminAccent = Color(0xFF9270FF);
@@ -217,7 +219,13 @@ class _AdminDashboard extends StatelessWidget {
             const Text('เครื่องมือผู้ดูแล',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
-            const _AdminModule(icon: Icons.people_outline, title: 'จัดการผู้ใช้งาน', subtitle: 'ค้นหาบัญชี ดูสถานะ และจัดการบทบาท', status: 'รอ Backend'),
+            AdminUsersEntryCard(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const AdminUsersPage(),
+                ),
+              ),
+            ),
             const _AdminModule(icon: Icons.gavel_outlined, title: 'ตรวจสอบเนื้อหาและรายงาน', subtitle: 'คิวตรวจสอบ รายงาน และการดำเนินการ', status: 'รอระบบจัดเก็บ'),
             const _AdminModule(icon: Icons.link_outlined, title: 'สถานะการเชื่อมต่อแพลตฟอร์ม', subtitle: 'Meta, TikTok และสถานะบริการ', status: 'ยังไม่เชื่อมต่อ'),
             const _AdminModule(icon: Icons.history, title: 'Audit Log', subtitle: 'บันทึกผู้กระทำ เหตุผล และเวลา', status: 'รอฐานข้อมูล'),
