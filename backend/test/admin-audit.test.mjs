@@ -134,7 +134,24 @@ test('customer role cannot read admin audit logs', async () => {
   const response = await requestAuditLogs(token, env);
   assert.equal(response.status, 403);
   assert.equal((await response.json()).error.code, 'FORBIDDEN');
-  assert.equal(calls.length, 0);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO admin_audit_logs/);
+  assert.equal(calls[0].values[2], 'admin.audit_logs.read');
+  assert.equal(calls[0].values[5], 'denied');
+  assert.deepEqual(JSON.parse(calls[0].values[6]), {
+    reason: 'insufficient_role',
+    role: 'customer',
+  });
+});
+
+test('denied admin access is not silently accepted when audit write fails', async () => {
+  installTestJwks();
+  const token = await createIdToken({ contentnexRole: 'customer' });
+  const { env } = makeEnv({ failRun: true });
+
+  const response = await requestAuditLogs(token, env);
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, 'AUDIT_LOG_WRITE_FAILED');
 });
 
 test('audit log endpoint requires a valid admin token', async () => {
