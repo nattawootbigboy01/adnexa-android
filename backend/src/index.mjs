@@ -230,6 +230,19 @@ export default {
       }
       const role = getTrustedRole(claims);
       if (role !== 'super_admin') {
+        if (env.ADMIN_DB) {
+          try {
+            await writeAdminAudit(
+              env,
+              claims,
+              'admin.access_check',
+              'denied',
+              { reason: 'insufficient_role', role },
+            );
+          } catch {
+            return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+          }
+        }
         return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
       }
       let auditLogged = false;
@@ -256,7 +269,21 @@ export default {
       if (!claims) {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
       }
-      if (getTrustedRole(claims) !== 'super_admin') {
+      const role = getTrustedRole(claims);
+      if (role !== 'super_admin') {
+        if (env.ADMIN_DB) {
+          try {
+            await writeAdminAudit(
+              env,
+              claims,
+              'admin.audit_logs.read',
+              'denied',
+              { reason: 'insufficient_role', role },
+            );
+          } catch {
+            return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+          }
+        }
         return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
       }
       if (!env.ADMIN_DB) {
