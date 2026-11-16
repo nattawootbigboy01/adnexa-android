@@ -1,0 +1,31 @@
+name: CONTENTNEX Backend Checks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/contentnex-admin-app-split-20261116
+    paths:
+      - "backend/**"
+      - ".github/workflows/contentnex-backend-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install
+      - name: Run backend tests
+        run: npm test
