@@ -192,7 +192,7 @@ test('audit log endpoint fails closed when the admin database is missing', async
 
   const response = await requestAuditLogs(token, env);
   assert.equal(response.status, 503);
-  assert.equal((await response.json()).error.code, 'ADMIN_DATABASE_NOT_CONFIGURED');
+  assert.equal((await response.json()).error.code, 'ADMIN_SESSION_CHECK_UNAVAILABLE');
 });
 
 test('audit log endpoint returns service unavailable when D1 read fails', async () => {
