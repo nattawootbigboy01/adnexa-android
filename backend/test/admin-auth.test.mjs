@@ -81,6 +81,7 @@ function makeEnv(overrides = {}) {
                 auditWrites.push({ sql, values });
                 return { success: true };
               },
+              first: async () => null,
             };
           },
         };
@@ -208,4 +209,58 @@ test('admin endpoint fails closed when the dedicated admin project is not config
 
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'ADMIN_AUTH_NOT_CONFIGURED');
+});
+
+test('revoked admin token is rejected and the attempt is audited', async () => {
+  installTestJwks();
+  const now = Math.floor(Date.now() / 1000);
+  const token = await createIdToken({ auth_time: now - 60 });
+  const auditWrites = [];
+  const env = {
+    ADMIN_FIREBASE_PROJECT_ID: ADMIN_PROJECT,
+    ADMIN_DB: {
+      prepare(sql) {
+        return {
+          bind(...values) {
+            return {
+              first: async () => ({ revoked_after: now - 30 }),
+              run: async () => {
+                auditWrites.push({ sql, values });
+                return { success: true };
+              },
+            };
+          },
+        };
+      },
+    },
+  };
+
+  const response = await worker.fetch(
+    new Request('https://contentnex-api.test/v1/admin/access-check', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error.code, 'TOKEN_REVOKED');
+  assert.equal(auditWrites.length, 1);
+  assert.equal(auditWrites[0].values[2], 'admin.session_check');
+  assert.equal(auditWrites[0].values[5], 'denied');
+});
+
+test('admin access fails closed when the session revocation database is missing', async () => {
+  installTestJwks();
+  const token = await createIdToken();
+  const { env } = makeEnv({ ADMIN_DB: undefined });
+
+  const response = await worker.fetch(
+    new Request('https://contentnex-api.test/v1/admin/access-check', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, 'ADMIN_SESSION_CHECK_UNAVAILABLE');
 });
