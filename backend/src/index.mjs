@@ -168,6 +168,21 @@ async function getAdminSessionStatus(env, claims) {
   }
 }
 
+async function getAdminDirectoryStatus(env, claims) {
+  if (!env.ADMIN_DB) return 'unavailable';
+  try {
+    const row = await env.ADMIN_DB.prepare(
+      'SELECT uid, role, status FROM admin_users WHERE uid = ?',
+    ).bind(claims.sub).first();
+    if (!row) return 'not_registered';
+    if (row.status !== 'active') return 'inactive';
+    if (row.role !== getTrustedRole(claims)) return 'role_mismatch';
+    return 'active';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 export function validateAiRequest(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'INVALID_BODY';
 
@@ -323,6 +338,20 @@ export default {
       if (!env.ADMIN_DB) {
         return json({ error: { code: 'ADMIN_DATABASE_NOT_CONFIGURED' } }, 503, headers);
       }
+      const actorDirectoryStatus = await getAdminDirectoryStatus(env, claims);
+      if (actorDirectoryStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_DIRECTORY_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (actorDirectoryStatus !== 'active') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.users.read', 'denied', {
+            reason: actorDirectoryStatus,
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
       try {
         const result = await env.ADMIN_DB.prepare(
           'SELECT uid, role, status, created_at FROM admin_users ORDER BY created_at DESC LIMIT 100',
@@ -374,6 +403,20 @@ export default {
       if (!env.ADMIN_DB) {
         return json({ error: { code: 'ADMIN_DATABASE_NOT_CONFIGURED' } }, 503, headers);
       }
+      const actorDirectoryStatus = await getAdminDirectoryStatus(env, claims);
+      if (actorDirectoryStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_DIRECTORY_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (actorDirectoryStatus !== 'active') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.session.revoke', 'denied', {
+            reason: actorDirectoryStatus,
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
 
       const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
       if (declaredLength > 2048) {
@@ -400,6 +443,10 @@ export default {
         body.uid.length > 128
       ) {
         return json({ error: { code: 'INVALID_TARGET_UID' } }, 400, headers);
+      }
+
+      if (body.uid === claims.sub) {
+        return json({ error: { code: 'SELF_REVOCATION_NOT_ALLOWED' } }, 400, headers);
       }
 
       let targetAdmin;
