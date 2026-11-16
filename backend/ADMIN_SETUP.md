@@ -1,48 +1,44 @@
 # CONTENTNEX Admin Backend Setup
 
-This change adds a protected, read-only admin audit-log API and a separate admin app scaffold. Admin API authentication must use a dedicated Firebase project through `ADMIN_FIREBASE_PROJECT_ID`; customer API authentication continues to use `FIREBASE_PROJECT_ID`. It does not deploy the Worker or create Firebase/Cloudflare resources.
+CONTENTNEX uses a dedicated Cloudflare Worker, a dedicated D1 database, and a dedicated Firebase project for administrator authentication. The customer Firebase project remains separate. This setup documentation does not deploy the Worker or apply database migrations.
 
-## Reuse the existing ADNEXA D1 database
+## Dedicated Cloudflare resources
 
-Use the existing Cloudflare D1 database named `adnexa-auth-db`. Do not create a second database.
+- Worker: `contentnex-api`
+- D1 database: `contentnex-db`
+- D1 binding: `ADMIN_DB`
+- Admin Firebase project: `contentnex-admin`
+- Admin Android package: `com.contentnex.contentnex_admin`
 
-The CONTENTNEX Worker can bind to the same D1 database while keeping its audit data in a separate table named `admin_audit_logs`. The existing ADNEXA OAuth table `oauth_states` is not modified by this migration.
+The D1 database ID is configured in `backend/wrangler.toml`. Keep the CONTENTNEX audit records in this database. Do not point this Worker at ADNEXA's `adnexa-auth-db`.
 
-Add this binding to `backend/wrangler.toml`, using the verified D1 database ID:
-
-```toml
-[[d1_databases]]
-binding = "ADMIN_DB"
-database_name = "adnexa-auth-db"
-database_id = "e6d29a02-a710-4ce4-87f9-4701224201ee"
-migrations_dir = "migrations"
-```
-
-The binding has been added to `backend/wrangler.toml` using the database ID supplied by the user. Confirm the ID in Cloudflare before applying the remote migration.
-
-From the `backend` directory, apply the migration to the existing remote database:
+From the `backend` directory, the remote migration command (do not run until explicitly approved) is:
 
 ```bash
-npx wrangler d1 migrations apply adnexa-auth-db --remote
+npx wrangler d1 migrations apply contentnex-db --remote
 ```
 
-This applies the new `admin_audit_logs` table and its indexes. It must not drop, rename, or alter the existing `oauth_states` table.
+The migration creates only `admin_audit_logs` and its indexes in `contentnex-db`. It does not modify ADNEXA's database.
 
-## Separate administrator Firebase project
+## Firebase separation
 
-Create a dedicated Firebase project for CONTENTNEX ADMIN. Register only the admin Android app in that project and configure its Firebase Auth email/password provider. Do not enable public admin registration. Provision the approved administrator account and assign the CONTENTNEX `contentnexRole=super_admin` claim in that project only. Then set the Cloudflare Worker variable `ADMIN_FIREBASE_PROJECT_ID` to that project's exact project ID. Until this variable is configured, admin endpoints intentionally return `ADMIN_AUTH_NOT_CONFIGURED` (503). The admin app reads its own Firebase settings from `ADMIN_FIREBASE_API_KEY`, `ADMIN_FIREBASE_APP_ID`, `ADMIN_FIREBASE_MESSAGING_SENDER_ID`, and `ADMIN_FIREBASE_PROJECT_ID` build-time values. Do not reuse the customer app's Firebase configuration for the final admin release.
+- Customer Firebase project: `adnexa-8daea`, used only for customer API authentication.
+- Admin Firebase project: `contentnex-admin`, used for `ADMIN_FIREBASE_PROJECT_ID` and the separate admin Android app.
+
+The admin project must have Email/Password authentication enabled. Do not enable public admin registration. Provision the approved administrator account through an owner-controlled process and assign `contentnexRole=super_admin` only in `contentnex-admin`. Require verified email. Do not reuse customer Firebase configuration for the final admin release.
+
+The admin app build expects `ADMIN_FIREBASE_API_KEY`, `ADMIN_FIREBASE_APP_ID`, `ADMIN_FIREBASE_MESSAGING_SENDER_ID`, `ADMIN_FIREBASE_PROJECT_ID`, and `ADMIN_API_BASE_URL` as repository variables. These are build configuration values; never put service-account private keys or privileged secrets in the APK.
 
 ## API
 
-- `GET /v1/health`: reports whether the D1 binding is present.
-- `GET /v1/admin/access-check`: verifies the Firebase ID token and the CONTENTNEX-only `contentnexRole=super_admin` claim. If D1 is configured, it records a successful access-check event.
-- `GET /v1/admin/audit-logs?limit=50`: returns the latest audit events. Requires a verified Firebase ID token with the CONTENTNEX super-admin claim and a configured D1 binding. The limit is clamped to 1–100.
-
-Audit records store the Firebase UID, action, outcome, resource type, optional resource ID, JSON details, and Unix timestamp. They do not store ID tokens, passwords, email addresses, or IP addresses.
+- `GET /v1/health`: reports Worker and configuration status.
+- `GET /v1/admin/access-check`: verifies a Firebase ID token from the dedicated admin project and requires the CONTENTNEX-only `contentnexRole=super_admin` claim. If D1 is configured, it writes an access event.
+- `GET /v1/admin/audit-logs?limit=50`: returns the latest audit events, requiring the same super-admin check and configured D1 binding. Limit is clamped to 1–100.
 
 ## Current safety limits
 
 - No user deletion, role changes, content edits, moderation actions, or payment operations are exposed.
-- No Gemini provider is enabled.
-- No Worker deployment or Cloudflare database creation is performed by this source change.
+- No Gemini provider is enabled; AI generation deliberately returns `AI_PROVIDER_DISABLED`.
+- No Worker deployment or D1 migration is performed by this documentation change.
 - Admin access is checked by the Worker, not trusted from client-supplied role fields.
+- Token revocation checking is not implemented yet; do not treat this backend as production-ready until that limitation is addressed and reviewed.
