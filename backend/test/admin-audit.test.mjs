@@ -60,7 +60,7 @@ function installTestJwks() {
   };
 }
 
-function makeEnv({ rows = [], failRun = false, failAll = false, noDb = false } = {}) {
+function makeEnv({ rows = [], failRun = false, failAll = false, noDb = false, revokedAfter = null, failSessionCheck = false } = {}) {
   const calls = [];
   const env = {
     ADMIN_FIREBASE_PROJECT_ID: ADMIN_PROJECT,
@@ -77,6 +77,10 @@ function makeEnv({ rows = [], failRun = false, failAll = false, noDb = false } =
               all: async () => {
                 if (failAll) throw new Error('simulated D1 read failure');
                 return { results: rows };
+              },
+              first: async () => {
+                if (failSessionCheck) throw new Error('simulated session check failure');
+                return revokedAfter === null ? null : { revoked_after: revokedAfter };
               },
             };
           },
@@ -199,4 +203,31 @@ test('audit log endpoint returns service unavailable when D1 read fails', async 
   const response = await requestAuditLogs(token, env);
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'AUDIT_LOG_READ_FAILED');
+});
+
+test('revoked admin token cannot read audit logs', async () => {
+  installTestJwks();
+  const now = Math.floor(Date.now() / 1000);
+  const token = await createIdToken({ auth_time: now - 60 });
+  const { env, calls } = makeEnv({ revokedAfter: now - 30 });
+
+  const response = await requestAuditLogs(token, env);
+
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error.code, 'TOKEN_REVOKED');
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO admin_audit_logs/);
+  assert.equal(calls[0].values[2], 'admin.session_check');
+  assert.equal(calls[0].values[5], 'denied');
+});
+
+test('admin audit endpoint fails closed when session revocation lookup fails', async () => {
+  installTestJwks();
+  const token = await createIdToken();
+  const { env } = makeEnv({ failSessionCheck: true });
+
+  const response = await requestAuditLogs(token, env);
+
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, 'ADMIN_SESSION_CHECK_UNAVAILABLE');
 });
