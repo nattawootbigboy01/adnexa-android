@@ -8,6 +8,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ยังไม่ได้ตั้งค่า Firebase'), findsOneWidget);
-    expect(find.text('CONTENTNEX ADMIN'), findsOneWidget);
+    expect(find.textContaining('ADMIN_FIREBASE_PROJECT_ID'), findsOneWidget);
   });
 }
