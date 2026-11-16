@@ -141,7 +141,7 @@ class _AdminAccessGateState extends State<AdminAccessGate> {
     if (snap.hasError || snap.data != true) return Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Icon(Icons.gpp_bad_outlined, size: 54, color: Colors.orangeAccent), const SizedBox(height: 12),
       const Text('บัญชีนี้ยังไม่มีสิทธิ์ผู้ดูแล', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-      const SizedBox(height: 8), const Text('การเข้าสู่ระบบสำเร็จไม่ได้หมายความว่าเป็น Admin ระบบตรวจสอบ Firebase custom claim และเซิร์ฟเวอร์จะตรวจสอบซ้ำทุกครั้ง', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
+      const SizedBox(height: 8), const Text('การเข้าสู่ระบบสำเร็จไม่ได้หมายความว่าเป็น Admin เซิร์ฟเวอร์จะตรวจสอบอีเมลที่ยืนยันแล้วและสิทธิ์ผู้ดูแลจากฐานข้อมูลทุกครั้ง', textAlign: TextAlign.center, style: TextStyle(color: muted, height: 1.5)),
       const SizedBox(height: 20), OutlinedButton.icon(onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout), label: const Text('ออกจากระบบ')),
     ]))));
     return const AdminDashboardPage();
