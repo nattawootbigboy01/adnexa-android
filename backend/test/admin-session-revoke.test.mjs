@@ -57,9 +57,12 @@ function makeEnv({ failWrite = false } = {}) {
             ] }),
             bind(...values) {
               return {
-                first: async () => sql.includes('FROM admin_users WHERE uid = ?')
-                  ? { uid: 'target-admin-uid', role: 'admin', status: 'active' }
-                  : null,
+                first: async () => {
+                  if (!sql.includes('FROM admin_users WHERE uid = ?')) return null;
+                  return values[0] === 'acting-super-admin'
+                    ? { uid: 'acting-super-admin', role: 'super_admin', status: 'active' }
+                    : { uid: 'target-admin-uid', role: 'admin', status: 'active' };
+                },
                 run: async () => {
                   writes.push({ sql, values });
                   if (failWrite) throw new Error('simulated D1 failure');
@@ -177,4 +180,32 @@ test('unregistered UID cannot be used to revoke an admin session', async () => {
   assert.equal((await response.json()).error.code, 'TARGET_ADMIN_NOT_FOUND');
   assert.equal(writes.length, 1);
   assert.equal(writes[0].values[5], 'denied');
+});
+
+test('super_admin cannot revoke their own session from the directory screen', async () => {
+  installJwks();
+  const token = await createToken();
+  const { env, writes } = makeEnv();
+  const response = await revoke(token, env, { uid: 'acting-super-admin' });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.code, 'SELF_REVOCATION_NOT_ALLOWED');
+  assert.equal(writes.length, 0);
+});
+
+test('admin operations reject a super_admin token absent from the admin directory', async () => {
+  installJwks();
+  const token = await createToken();
+  const { env } = makeEnv();
+  env.ADMIN_DB.prepare = (sql) => ({
+    bind(...values) {
+      return {
+        first: async () => sql.includes('FROM admin_users WHERE uid = ?') ? null : null,
+        run: async () => ({ success: true }),
+      };
+    },
+    all: async () => ({ results: [] }),
+  });
+  const response = await listUsers(token, env);
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error.code, 'FORBIDDEN');
 });
