@@ -52,14 +52,14 @@ function makeEnv({ failWrite = false } = {}) {
       ADMIN_DB: {
         prepare(sql) {
           return {
+            all: async () => ({ results: [
+              { uid: 'bootstrap-admin-uid', role: 'super_admin', status: 'active', created_at: 1700000000 },
+            ] }),
             bind(...values) {
               return {
                 first: async () => sql.includes('FROM admin_users WHERE uid = ?')
                   ? { uid: 'target-admin-uid', role: 'admin', status: 'active' }
                   : null,
-                all: async () => ({ results: [
-                  { uid: 'bootstrap-admin-uid', role: 'super_admin', status: 'active', created_at: 1700000000 },
-                ] }),
                 run: async () => {
                   writes.push({ sql, values });
                   if (failWrite) throw new Error('simulated D1 failure');
