@@ -264,3 +264,40 @@ test('admin access fails closed when the session revocation database is missing'
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'ADMIN_SESSION_CHECK_UNAVAILABLE');
 });
+
+test('newly authenticated admin session after the revocation cutoff is accepted', async () => {
+  installTestJwks();
+  const now = Math.floor(Date.now() / 1000);
+  const token = await createIdToken({ auth_time: now - 10 });
+  const auditWrites = [];
+  const env = {
+    ADMIN_FIREBASE_PROJECT_ID: ADMIN_PROJECT,
+    ADMIN_DB: {
+      prepare(sql) {
+        return {
+          bind(...values) {
+            return {
+              first: async () => ({ revoked_after: now - 30 }),
+              run: async () => {
+                auditWrites.push({ sql, values });
+                return { success: true };
+              },
+            };
+          },
+        };
+      },
+    },
+  };
+
+  const response = await worker.fetch(
+    new Request('https://contentnex-api.test/v1/admin/access-check', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    env,
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).authorized, true);
+  assert.equal(auditWrites.length, 1);
+  assert.equal(auditWrites[0].values[2], 'admin.access_check');
+});
