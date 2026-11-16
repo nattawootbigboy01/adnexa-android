@@ -295,6 +295,83 @@ export default {
       }, 200, headers);
     }
 
+    if (url.pathname === '/v1/admin/sessions/revoke' && request.method === 'POST') {
+      if (!env.ADMIN_FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
+      }
+      const claims = await authenticate(request, env, env.ADMIN_FIREBASE_PROJECT_ID);
+      if (!claims) {
+        return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
+      }
+      const sessionStatus = await getAdminSessionStatus(env, claims);
+      if (sessionStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_SESSION_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (sessionStatus === 'revoked') {
+        return json({ error: { code: 'TOKEN_REVOKED' } }, 401, headers);
+      }
+      const role = getTrustedRole(claims);
+      if (role !== 'super_admin') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.session.revoke', 'denied', {
+            reason: 'insufficient_role',
+            role,
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
+      if (!env.ADMIN_DB) {
+        return json({ error: { code: 'ADMIN_DATABASE_NOT_CONFIGURED' } }, 503, headers);
+      }
+
+      const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+      if (declaredLength > 2048) {
+        return json({ error: { code: 'REQUEST_TOO_LARGE' } }, 413, headers);
+      }
+      let body;
+      try {
+        const raw = await request.text();
+        if (raw.length > 2048) {
+          return json({ error: { code: 'REQUEST_TOO_LARGE' } }, 413, headers);
+        }
+        body = JSON.parse(raw);
+      } catch {
+        return json({ error: { code: 'INVALID_JSON' } }, 400, headers);
+      }
+      if (
+        !body ||
+        typeof body !== 'object' ||
+        Array.isArray(body) ||
+        Object.keys(body).length !== 1 ||
+        typeof body.uid !== 'string' ||
+        body.uid.trim() !== body.uid ||
+        body.uid.length < 1 ||
+        body.uid.length > 128
+      ) {
+        return json({ error: { code: 'INVALID_TARGET_UID' } }, 400, headers);
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      try {
+        await env.ADMIN_DB.prepare(
+          `INSERT INTO admin_token_revocations (uid, revoked_after, updated_at)
+           VALUES (?, ?, ?)
+           ON CONFLICT(uid) DO UPDATE SET
+             revoked_after = MAX(admin_token_revocations.revoked_after, excluded.revoked_after),
+             updated_at = excluded.updated_at`,
+        ).bind(body.uid, now, now).run();
+        await writeAdminAudit(env, claims, 'admin.session.revoke', 'success', {
+          targetUid: body.uid,
+          revokedAfter: now,
+        });
+      } catch {
+        return json({ error: { code: 'ADMIN_SESSION_REVOKE_FAILED' } }, 503, headers);
+      }
+      return json({ revoked: true, targetUid: body.uid, revokedAfter: now }, 200, headers);
+    }
+
     if (url.pathname === '/v1/admin/audit-logs' && request.method === 'GET') {
       if (!env.ADMIN_FIREBASE_PROJECT_ID) {
         return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
