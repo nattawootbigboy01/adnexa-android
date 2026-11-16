@@ -4,8 +4,8 @@ compatibility_date = "2025-01-01"
 
 [[d1_databases]]
 binding = "ADMIN_DB"
-database_name = "adnexa-auth-db"
-database_id = "e6d29a02-a710-4ce4-87f9-4701224201ee"
+database_name = "contentnex-db"
+database_id = "b820a19b-dd98-4a9f-9aa0-996789ce1a4c"
 migrations_dir = "migrations"
 
 [vars]
