@@ -295,6 +295,55 @@ export default {
       }, 200, headers);
     }
 
+    if (url.pathname === '/v1/admin/users' && request.method === 'GET') {
+      if (!env.ADMIN_FIREBASE_PROJECT_ID) {
+        return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
+      }
+      const claims = await authenticate(request, env, env.ADMIN_FIREBASE_PROJECT_ID);
+      if (!claims) {
+        return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
+      }
+      const sessionStatus = await getAdminSessionStatus(env, claims);
+      if (sessionStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_SESSION_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (sessionStatus === 'revoked') {
+        return json({ error: { code: 'TOKEN_REVOKED' } }, 401, headers);
+      }
+      if (getTrustedRole(claims) !== 'super_admin') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.users.read', 'denied', {
+            reason: 'insufficient_role',
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'FORBIDDEN' } }, 403, headers);
+      }
+      if (!env.ADMIN_DB) {
+        return json({ error: { code: 'ADMIN_DATABASE_NOT_CONFIGURED' } }, 503, headers);
+      }
+      try {
+        const result = await env.ADMIN_DB.prepare(
+          'SELECT uid, role, status, created_at FROM admin_users ORDER BY created_at DESC LIMIT 100',
+        ).all();
+        await writeAdminAudit(env, claims, 'admin.users.read', 'success', {
+          count: (result.results ?? []).length,
+        });
+        return json({
+          items: (result.results ?? []).map((row) => ({
+            uid: row.uid,
+            role: row.role,
+            status: row.status,
+            createdAt: row.created_at,
+          })),
+          limit: 100,
+        }, 200, headers);
+      } catch {
+        return json({ error: { code: 'ADMIN_USERS_READ_FAILED' } }, 503, headers);
+      }
+    }
+
     if (url.pathname === '/v1/admin/sessions/revoke' && request.method === 'POST') {
       if (!env.ADMIN_FIREBASE_PROJECT_ID) {
         return json({ error: { code: 'ADMIN_AUTH_NOT_CONFIGURED' } }, 503, headers);
@@ -351,6 +400,26 @@ export default {
         body.uid.length > 128
       ) {
         return json({ error: { code: 'INVALID_TARGET_UID' } }, 400, headers);
+      }
+
+      let targetAdmin;
+      try {
+        targetAdmin = await env.ADMIN_DB.prepare(
+          'SELECT uid, role, status FROM admin_users WHERE uid = ?',
+        ).bind(body.uid).first();
+      } catch {
+        return json({ error: { code: 'ADMIN_DIRECTORY_READ_FAILED' } }, 503, headers);
+      }
+      if (!targetAdmin) {
+        try {
+          await writeAdminAudit(env, claims, 'admin.session.revoke', 'denied', {
+            reason: 'target_not_registered',
+            targetUid: body.uid,
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'TARGET_ADMIN_NOT_FOUND' } }, 404, headers);
       }
 
       const now = Math.floor(Date.now() / 1000);
