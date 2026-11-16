@@ -131,20 +131,8 @@ async function authenticateAdmin(request, env, allowedRoles = ["super_admin", "a
   }
   await ensureAdminTables(env);
   const uid = claims.sub;
-  const now = Math.floor(Date.now() / 1000);
-
-  // Bootstrap only the already-trusted Firebase admin claim. Existing D1 roles
-  // remain authoritative after the first bootstrap.
-  if (claims.admin === true) {
-    await env.DB.prepare(
-      "INSERT OR IGNORE INTO admin_roles (uid, role, granted_by, granted_at, updated_at) VALUES (?, 'super_admin', ?, ?, ?)"
-    ).bind(uid, uid, now, now).run();
-  } else if (claims.role === "admin") {
-    await env.DB.prepare(
-      "INSERT OR IGNORE INTO admin_roles (uid, role, granted_by, granted_at, updated_at) VALUES (?, 'admin', ?, ?, ?)"
-    ).bind(uid, uid, now, now).run();
-  }
-
+  // D1 is the sole authority for administrator roles.
+  // Never recreate a deleted or downgraded role from stale Firebase custom claims.
   const role = await getStoredAdminRole(env, uid);
   if (!role || !allowedRoles.includes(role)) {
     throw new Error("Administrator access required");
