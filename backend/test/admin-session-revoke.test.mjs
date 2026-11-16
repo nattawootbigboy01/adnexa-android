@@ -169,7 +169,9 @@ test('unregistered UID cannot be used to revoke an admin session', async () => {
   env.ADMIN_DB.prepare = (sql) => ({
     bind(...values) {
       return {
-        first: async () => sql.includes('FROM admin_users WHERE uid = ?') ? null : null,
+        first: async () => sql.includes('FROM admin_users WHERE uid = ?') && values[0] === 'acting-super-admin'
+          ? { uid: 'acting-super-admin', role: 'super_admin', status: 'active' }
+          : null,
         run: async () => { writes.push({ sql, values }); return { success: true }; },
         all: async () => ({ results: [] }),
       };
