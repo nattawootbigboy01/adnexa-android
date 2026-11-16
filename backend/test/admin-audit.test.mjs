@@ -68,7 +68,7 @@ function makeEnv({ rows = [], failRun = false, failAll = false, noDb = false, re
       prepare(sql) {
         return {
           bind(...values) {
-            calls.push({ sql, values });
+            if (/admin_audit_logs/.test(sql)) calls.push({ sql, values });
             return {
               run: async () => {
                 if (failRun) throw new Error('simulated D1 write failure');
