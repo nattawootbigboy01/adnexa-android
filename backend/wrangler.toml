@@ -13,9 +13,13 @@ FIREBASE_PROJECT_ID = "adnexa-8daea"
 ADMIN_FIREBASE_PROJECT_ID = "contentnex-admin"
 
 # Preview settings do not inherit production bindings.
-# Add a separate staging D1 database here before deploying a Preview.
-# Do not point Preview at the production contentnex-db.
+# This binding uses an isolated staging database, never the production database.
 [previews]
+
+[[previews.d1_databases]]
+binding = "ADMIN_DB"
+database_name = "contentnex-prev"
+database_id = "4797d5b4-c8ee-44a6-af06-603cffb8640d"
 
 # Set APP_ORIGIN only when the final web origin is known.
 # Native Android requests do not rely on browser CORS.
