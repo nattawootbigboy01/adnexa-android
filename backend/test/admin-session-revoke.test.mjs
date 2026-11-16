@@ -54,7 +54,12 @@ function makeEnv({ failWrite = false } = {}) {
           return {
             bind(...values) {
               return {
-                first: async () => null,
+                first: async () => sql.includes('FROM admin_users WHERE uid = ?')
+                  ? { uid: 'target-admin-uid', role: 'admin', status: 'active' }
+                  : null,
+                all: async () => ({ results: [
+                  { uid: 'bootstrap-admin-uid', role: 'super_admin', status: 'active', created_at: 1700000000 },
+                ] }),
                 run: async () => {
                   writes.push({ sql, values });
                   if (failWrite) throw new Error('simulated D1 failure');
@@ -67,6 +72,12 @@ function makeEnv({ failWrite = false } = {}) {
       },
     },
   };
+}
+
+async function listUsers(token, env) {
+  return worker.fetch(new Request('https://contentnex-api.test/v1/admin/users', {
+    headers: { Authorization: `Bearer ${token}` },
+  }), env);
 }
 
 async function revoke(token, env, body = { uid: 'target-admin-uid' }) {
@@ -130,4 +141,40 @@ test('revocation endpoint fails closed when D1 write fails', async () => {
 
   assert.equal(response.status, 503);
   assert.equal((await response.json()).error.code, 'ADMIN_SESSION_REVOKE_FAILED');
+});
+
+test('super_admin can read the registered admin directory and the read is audited', async () => {
+  installJwks();
+  const token = await createToken();
+  const { env, writes } = makeEnv();
+  const response = await listUsers(token, env);
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.items.length, 1);
+  assert.equal(body.items[0].uid, 'bootstrap-admin-uid');
+  assert.equal(body.items[0].role, 'super_admin');
+  assert.equal(body.items[0].status, 'active');
+  assert.match(writes[0].sql, /INSERT INTO admin_audit_logs/);
+  assert.equal(writes[0].values[2], 'admin.users.read');
+});
+
+test('unregistered UID cannot be used to revoke an admin session', async () => {
+  installJwks();
+  const token = await createToken();
+  const { env, writes } = makeEnv();
+  env.ADMIN_DB.prepare = (sql) => ({
+    bind(...values) {
+      return {
+        first: async () => sql.includes('FROM admin_users WHERE uid = ?') ? null : null,
+        run: async () => { writes.push({ sql, values }); return { success: true }; },
+        all: async () => ({ results: [] }),
+      };
+    },
+  });
+  const response = await revoke(token, env);
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error.code, 'TARGET_ADMIN_NOT_FOUND');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].values[5], 'denied');
 });
