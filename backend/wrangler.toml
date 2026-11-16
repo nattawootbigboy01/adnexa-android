@@ -10,6 +10,7 @@ migrations_dir = "migrations"
 
 [vars]
 FIREBASE_PROJECT_ID = "adnexa-8daea"
+ADMIN_FIREBASE_PROJECT_ID = "contentnex-admin"
 
 # Set APP_ORIGIN only when the final web origin is known.
 # Native Android requests do not rely on browser CORS.
