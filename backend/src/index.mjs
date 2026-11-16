@@ -148,6 +148,26 @@ async function authenticate(request, env, projectId = env.FIREBASE_PROJECT_ID) {
   }
 }
 
+/**
+ * Application-level admin session revocation.
+ * A missing table/database or D1 error fails closed.
+ * A fresh sign-in has a later auth_time and is allowed.
+ */
+async function getAdminSessionStatus(env, claims) {
+  if (!env.ADMIN_DB) return 'unavailable';
+  try {
+    const row = await env.ADMIN_DB.prepare(
+      'SELECT revoked_after FROM admin_token_revocations WHERE uid = ?',
+    ).bind(claims.sub).first();
+    if (!row) return 'active';
+    const revokedAfter = Number(row.revoked_after);
+    if (!Number.isFinite(revokedAfter)) return 'unavailable';
+    return claims.auth_time <= revokedAfter ? 'revoked' : 'active';
+  } catch {
+    return 'unavailable';
+  }
+}
+
 export function validateAiRequest(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'INVALID_BODY';
 
@@ -228,6 +248,20 @@ export default {
       if (!claims) {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
       }
+      const sessionStatus = await getAdminSessionStatus(env, claims);
+      if (sessionStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_SESSION_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (sessionStatus === 'revoked') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.session_check', 'denied', {
+            reason: 'token_revoked',
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'TOKEN_REVOKED' } }, 401, headers);
+      }
       const role = getTrustedRole(claims);
       if (role !== 'super_admin') {
         if (env.ADMIN_DB) {
@@ -268,6 +302,20 @@ export default {
       const claims = await authenticate(request, env, env.ADMIN_FIREBASE_PROJECT_ID);
       if (!claims) {
         return json({ error: { code: 'UNAUTHENTICATED' } }, 401, headers);
+      }
+      const sessionStatus = await getAdminSessionStatus(env, claims);
+      if (sessionStatus === 'unavailable') {
+        return json({ error: { code: 'ADMIN_SESSION_CHECK_UNAVAILABLE' } }, 503, headers);
+      }
+      if (sessionStatus === 'revoked') {
+        try {
+          await writeAdminAudit(env, claims, 'admin.session_check', 'denied', {
+            reason: 'token_revoked',
+          });
+        } catch {
+          return json({ error: { code: 'AUDIT_LOG_WRITE_FAILED' } }, 503, headers);
+        }
+        return json({ error: { code: 'TOKEN_REVOKED' } }, 401, headers);
       }
       const role = getTrustedRole(claims);
       if (role !== 'super_admin') {
