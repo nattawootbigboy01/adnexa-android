@@ -128,7 +128,15 @@ test('valid Firebase token without super_admin claim is forbidden', async () => 
 
   assert.equal(response.status, 403);
   assert.equal(body.error.code, 'FORBIDDEN');
-  assert.equal(auditWrites.length, 0);
+  assert.equal(auditWrites.length, 1);
+  assert.match(auditWrites[0].sql, /INSERT INTO admin_audit_logs/);
+  assert.equal(auditWrites[0].values[1], 'test-super-admin-uid');
+  assert.equal(auditWrites[0].values[2], 'admin.access_check');
+  assert.equal(auditWrites[0].values[5], 'denied');
+  assert.deepEqual(JSON.parse(auditWrites[0].values[6]), {
+    reason: 'insufficient_role',
+    role: 'customer',
+  });
 });
 
 test('token signed by an untrusted key is rejected', async () => {
